@@ -1,1 +1,1 @@
--intstyle "ise" -incremental -o "C:/TEMP/Lab01_Pedro_Carneiro/Comp1bit_testbench_isim_beh.exe" -prj "C:/TEMP/Lab01_Pedro_Carneiro/Comp1bit_testbench_beh.prj" "work.Comp1bit_testbench" 
+-intstyle "ise" -incremental -o "C:/users/pedrocunha/Documents/PUC/ENG4448/LAB01/Comp1bit/comp2bit_testbench_isim_beh.exe" -prj "C:/users/pedrocunha/Documents/PUC/ENG4448/LAB01/Comp1bit/comp2bit_testbench_beh.prj" "work.comp2bit_testbench" 
