@@ -1,0 +1,8 @@
+INTSTYLE=impact
+INFILE=C:\TEMP\Lab01_Pedro_Carneiro\impact.xsl
+OUTFILE=C:\TEMP\Lab01_Pedro_Carneiro\impact.xsl
+FAMILY=Multiple
+PART=Multiple
+WORKINGDIR=C:\TEMP\Lab01_Pedro_Carneiro
+LICENSE=iMPACT
+USER_INFO=iMPACT

@@ -1,0 +1,8 @@
+INTSTYLE=ise
+INFILE=C:\TEMP\Lab01_Pedro_Carneiro\Comp1bit.ncd
+OUTFILE=C:\TEMP\Lab01_Pedro_Carneiro\Comp1bit.bit
+FAMILY=Spartan3E
+PART=xc3s500e-4fg320
+WORKINGDIR=C:\TEMP\Lab01_Pedro_Carneiro
+LICENSE=WebPack
+USER_INFO=211165492_176193773_0_658
