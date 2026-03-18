@@ -54,13 +54,15 @@ begin
     -- Lógica de próximo estado
     ----------------------------------------------------------------
     process(current_state, a, b)
+        variable ab : std_logic_vector(1 downto 0);
     begin
         next_state <= idle;
+        ab := a & b;
 
         case current_state is
 
             when idle =>
-                case (a & b) is
+                case ab is
                     when "00" => next_state <= idle;
                     when "10" => next_state <= e1;
                     when "01" => next_state <= s1;
@@ -68,28 +70,28 @@ begin
                 end case;
 
             when e1 =>
-                case (a & b) is
+                case ab is
                     when "10" => next_state <= e1;
                     when "11" => next_state <= e2;
                     when others => next_state <= idle;
                 end case;
 
             when e2 =>
-                case (a & b) is
+                case ab is
                     when "11" => next_state <= e2;
                     when "01" => next_state <= e3;
                     when others => next_state <= idle;
                 end case;
 
             when e3 =>
-                case (a & b) is
+                case ab is
                     when "01" => next_state <= e3;
                     when "00" => next_state <= e4;
                     when others => next_state <= idle;
                 end case;
 
             when e4 =>
-                case (a & b) is
+                case ab is
                     when "00" => next_state <= idle;
                     when "10" => next_state <= e1;
                     when "01" => next_state <= s1;
@@ -97,28 +99,28 @@ begin
                 end case;
 
             when s1 =>
-                case (a & b) is
+                case ab is
                     when "01" => next_state <= s1;
                     when "11" => next_state <= s2;
                     when others => next_state <= idle;
                 end case;
 
             when s2 =>
-                case (a & b) is
+                case ab is
                     when "11" => next_state <= s2;
                     when "10" => next_state <= s3;
                     when others => next_state <= idle;
                 end case;
 
             when s3 =>
-                case (a & b) is
+                case ab is
                     when "10" => next_state <= s3;
                     when "00" => next_state <= s4;
                     when others => next_state <= idle;
                 end case;
 
             when s4 =>
-                case (a & b) is
+                case ab is
                     when "00" => next_state <= idle;
                     when "10" => next_state <= e1;
                     when "01" => next_state <= s1;
