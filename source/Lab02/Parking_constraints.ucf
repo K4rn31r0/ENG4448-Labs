@@ -1,0 +1,25 @@
+# =========================
+# Parking - Spartan 3E Kit
+# =========================
+
+# Clock de 50 MHz da placa
+NET "clk" LOC = "C9" | IOSTANDARD = LVCMOS33;
+NET "clk" PERIOD = 20.0 ns HIGH 40%;
+
+# Push-buttons
+# reset ativo em nível alto
+NET "reset" LOC = "K17" | IOSTANDARD = LVTTL | PULLDOWN;
+
+# Sensores simulados por botões
+NET "a" LOC = "D18" | IOSTANDARD = LVTTL | PULLDOWN;
+NET "b" LOC = "H13" | IOSTANDARD = LVTTL | PULLDOWN;
+
+# Saída em barra nos 8 LEDs
+NET "z<7>" LOC = "F9"  | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8;
+NET "z<6>" LOC = "E9"  | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8;
+NET "z<5>" LOC = "D11" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8;
+NET "z<4>" LOC = "C11" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8;
+NET "z<3>" LOC = "F11" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8;
+NET "z<2>" LOC = "E11" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8;
+NET "z<1>" LOC = "E12" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8;
+NET "z<0>" LOC = "F12" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8;
