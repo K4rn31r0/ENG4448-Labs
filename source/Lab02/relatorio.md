@@ -10,3 +10,7 @@
 | `s3`         | `s4`    | `idle`  | `s3`    | `idle`  |   0 |   0 |
 | `s4`         | `idle`  | `s1`    | `e1`    | `idle`  |   0 |   1 |
 
+
+LUTs: 33/9312
+IOBs: 12/232
+Delay: 5.110 ns
