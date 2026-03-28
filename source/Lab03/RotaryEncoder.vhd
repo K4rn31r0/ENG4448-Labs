@@ -63,19 +63,53 @@ begin
 	begin
 		
 		ab := rot_a & rot_b;
+		nst <= pst;
 		
-		case pst is 
+		case pst is 	
 			when s0 => 
 				if (ab = "01") then
 					nst <= e1;
 				elsif (ab = "10") then
 					nst <= d1;
-				end if;	
-
-			-- continue aqui!!!!
-			when others => null; 
+				end if;
+				
+			when e1 =>
+				if (ab = "11") then nst <= e2;
+				elsif (ab = "00") then nst <= s0;
+				end if;
+				
+			when e2 => 
+				if (ab = "10") then nst <= e3;
+				elsif (ab = "01") then nst <= e1;
+				end if;
+			
+			when e3 =>
+				if (ab = "00") then 
+					nst <= s0; 	-- giro completo para a esquerda
+				elsif  (ab = "11") then nst <= e2;
+				end if;
+			
+			when d1 =>
+				if (ab = "11") then nst <= d2;
+				elsif (ab ="00") then nst <= s0;
+				end if;
+			
+			when d2 =>
+				if (ab = "01") then nst <= d3;
+				elsif (ab = "10") then nst <= d1;
+				end if;
+			
+			when d3 =>
+				if (ab = "00") then
+					nst <= s0;	-- giro completo para a direita
+				elsif (ab = "11") then nst <= d2;
+				end if;
+				
+			when others => 
+				nst <= s0; 
+			
 		end case;
-		
+	
 	end process fsm_comb_proc;
 
 end Behavioral;
