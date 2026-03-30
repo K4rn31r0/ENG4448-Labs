@@ -1,0 +1,16 @@
+# Ignore all
+*
+
+# Allow directories
+!*/
+
+# Allow gitignore
+!.gitignore
+
+# Allow only specific files
+!*.vhd
+!*.ucf
+!*.png
+!*.vhd
+!*.zip
+
