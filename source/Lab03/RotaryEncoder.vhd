@@ -22,6 +22,7 @@ architecture Behavioral of RotaryEncoder is
 	signal pst, nst : state_type := s0; 
 	signal rotary_q1 : STD_LOGIC := '0';
 	signal rotary_q2 : STD_LOGIC := '0';
+	signal leds_reg : unsigned(7 downto 0) := "10000000";
 	
 begin
 
@@ -111,6 +112,23 @@ begin
 		end case;
 	
 	end process fsm_comb_proc;
+	
+	output_proc: process(clk, reset)
+	begin
+	
+		if (reset = '1') then
+			leds_reg <= "10000000";
+		elsif rising_edge(clk) then
+			if (pst = e3 and rot_a = '0' and rot_b = '0') then 
+				 leds_reg <= leds_reg(6 downto 0) & leds_reg(7);  -- Shift Left (giro esquerda)
+			elsif (pst = d3 and rot_a = '0' and rot_b = '0') then
+				 leds_reg <= leds_reg(0) & leds_reg(7 downto 1);  -- Shift Right (giro direita)
+			end if;
+		end if;
+	
+	end process output_proc;
+	
+	leds <= std_logic_vector(leds_reg);
 
 end Behavioral;
 
