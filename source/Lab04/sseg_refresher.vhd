@@ -15,7 +15,7 @@ end sseg_refresher;
 
 architecture Behavioral of sseg_refresher is
 
-	signal counter, c_next : unsigned(N-1 downto 0) := (others => '0');
+	signal counter : unsigned(N-1 downto 0) := (others => '0');
 
 begin
 
@@ -25,13 +25,12 @@ begin
 			if (clr = '1') then
 				counter <= (others => '0');
 			else 
-				counter <= c_next;
+				counter <= counter + 1;
 			end if;
 		end if;
 	end process;
 	
-	c_next <= counter + 1;
-	q <= std_logic(counter(N-1));
+	q <= counter(N-1);
 
 end Behavioral;
 
