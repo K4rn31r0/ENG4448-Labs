@@ -1,0 +1,13 @@
+# Clock onboard de 50 MHz
+NET "clk" LOC = "C9" | IOSTANDARD = LVCMOS33;
+NET "clk" PERIOD = 20.0 ns HIGH 40%;
+
+# Reset no BTN_SOUTH
+NET "reset" LOC = "K17" | IOSTANDARD = LVTTL | PULLDOWN;
+
+# Porta PS/2
+NET "ps2_clk"  LOC = "G14" | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = SLOW;
+NET "ps2_data" LOC = "G13" | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = SLOW;
+
+# LED de erro -> LED0
+NET "led_erro" LOC = "F12" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8;
