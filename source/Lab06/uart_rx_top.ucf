@@ -11,16 +11,9 @@ NET "clk" PERIOD = 20.0 ns HIGH 40%;
 NET "reset" LOC = "K17" | IOSTANDARD = LVTTL | PULLDOWN;
 
 # =========================================================
-# PS/2
+# UART RX pela porta RS-232 DCE
 # =========================================================
-NET "ps2_clk"  LOC = "G14" | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = SLOW;
-NET "ps2_data" LOC = "G13" | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = SLOW;
-
-# =========================================================
-# LED de erro
-# LED0 da Spartan-3E
-# =========================================================
-NET "led_erro" LOC = "F12" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8;
+NET "rx" LOC = "R7" | IOSTANDARD = LVTTL;
 
 # =========================================================
 # Display de 7 segmentos - dados
