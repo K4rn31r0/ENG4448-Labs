@@ -155,8 +155,11 @@ begin
                                 parity_error_reg <= '0';
 
                                 -- desloca os bytes válidos recebidos
-                                byte1_reg <= byte0_reg;
-                                byte0_reg <= data_reg;
+                                if (data_reg /= x"F0") and (data_reg /= x"E0") then
+                                    byte1_reg <= byte0_reg;
+                                    byte0_reg <= data_reg;
+                                end if;
+
                             else
                                 parity_error_reg <= '1';
                             end if;
