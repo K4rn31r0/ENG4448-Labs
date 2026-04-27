@@ -4,26 +4,35 @@ NET "CLK" LOC = "C9" | IOSTANDARD = LVCMOS33 ;
 # Reset 
 NET "RST" LOC = "K17" | IOSTANDARD = LVTTL | PULLDOWN ;
 
-# Keypad - linhas
-NET "KYPD_ROW<3>" LOC = "E7" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;		# linha 1
-NET "KYPD_ROW<2>" LOC = "A6" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;		# linha 2
-NET "KYPD_ROW<1>" LOC = "D5" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;		# linha 3
-NET "KYPD_ROW<0>" LOC = "B4" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;		# linha 4
+# =================================================================
+# Keypad (PmodKYPD) - Conector J3 da placa FX2 MIB
+# =================================================================
+# Linhas (Conector J3 - Linha inferior: Pinos 7 a 10)
+NET "KYPD_ROW<3>" LOC = "B14" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ; # linha 1 (Pino 10 / IO24)
+NET "KYPD_ROW<2>" LOC = "B13" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ; # linha 2 (Pino 9  / IO22)
+NET "KYPD_ROW<1>" LOC = "F12" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ; # linha 3 (Pino 8  / IO20)
+NET "KYPD_ROW<0>" LOC = "E11" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ; # linha 4 (Pino 7  / IO18)
 
-# Keypad - colunas
-NET "KYPD_COL<3>" LOC = "F7" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;		# coluna 1
-NET "KYPD_COL<2>" LOC = "B6" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;		# coluna 2 
-NET "KYPD_COL<1>" LOC = "C5" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;		# coluna 3
-NET "KYPD_COL<0>" LOC = "A4" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;		# coluna 4
+# Colunas (Conector J3 - Linha superior: Pinos 1 a 4)
+NET "KYPD_COL<3>" LOC = "A14" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ; # coluna 1 (Pino 4 / IO23)
+NET "KYPD_COL<2>" LOC = "A13" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ; # coluna 2 (Pino 3 / IO21)
+NET "KYPD_COL<1>" LOC = "E12" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ; # coluna 3 (Pino 2 / IO19)
+NET "KYPD_COL<0>" LOC = "F11" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ; # coluna 4 (Pino 1 / IO17)
 
-# 7 segmentos - dados
-NET "SSEG_OUT<6>" LOC = "A8" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;		# pino AA
-NET "SSEG_OUT<5>" LOC = "G9" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;		# pino AB
-NET "SSEG_OUT<4>" LOC = "D12" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	# pino AC
-NET "SSEG_OUT<3>" LOC = "C12" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	# pino AD
-NET "SSEG_OUT<2>" LOC = "A15" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	# pino AE
-NET "SSEG_OUT<1>" LOC = "B15" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	# pino AF
-NET "SSEG_OUT<0>" LOC = "C3" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;		# pino AG
+# =================================================================
+# Display 7 Segmentos (PmodSSD) - Conectores J1 e J2 da placa FX2
+# =================================================================
+# Assumindo que os dois conectores do display estão encaixados
+# nas linhas SUPERIORES (Pinos 1 a 4) de J1 e J2, respectivamente.
 
-# 7 segmentos - digit select
-NET "SSEG_SEL" LOC = "C15" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;			# pino C
+# Dados (Segmentos)
+NET "SSEG_OUT<6>" LOC = "B4"  | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ; # pino AA (J1 Pino 1 / IO1)
+NET "SSEG_OUT<5>" LOC = "D5"  | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ; # pino AB (J1 Pino 2 / IO3)
+NET "SSEG_OUT<4>" LOC = "A6"  | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ; # pino AC (J1 Pino 3 / IO5)
+NET "SSEG_OUT<3>" LOC = "E7"  | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ; # pino AD (J1 Pino 4 / IO7)
+NET "SSEG_OUT<2>" LOC = "D7"  | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ; # pino AE (J2 Pino 1 / IO9)
+NET "SSEG_OUT<1>" LOC = "F8"  | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ; # pino AF (J2 Pino 2 / IO11)
+NET "SSEG_OUT<0>" LOC = "F9"  | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ; # pino AG (J2 Pino 3 / IO13)
+
+# Controle (Digit Select)
+NET "SSEG_SEL"    LOC = "D11" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ; # pino C  (J2 Pino 4 / IO15)
