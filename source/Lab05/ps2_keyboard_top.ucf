@@ -5,7 +5,7 @@ NET "clk" LOC = "C9" | IOSTANDARD = LVCMOS33;
 NET "clk" PERIOD = 20.0 ns HIGH 40%;
 
 # =========================================================
-# Reset em botão da placa
+# Reset em botao da placa
 # BTN_SOUTH
 # =========================================================
 NET "reset" LOC = "K17" | IOSTANDARD = LVTTL | PULLDOWN;
@@ -26,16 +26,16 @@ NET "led_erro" LOC = "F12" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8;
 # Display de 7 segmentos - dados
 # Adaptado do Lab04
 # =========================================================
-NET "sseg<6>" LOC = "A8"  | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8;   # pino AA
-NET "sseg<5>" LOC = "G9"  | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8;   # pino AB
-NET "sseg<4>" LOC = "D12" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8;   # pino AC
-NET "sseg<3>" LOC = "C12" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8;   # pino AD
-NET "sseg<2>" LOC = "A15" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8;   # pino AE
-NET "sseg<1>" LOC = "B15" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8;   # pino AF
-NET "sseg<0>" LOC = "C3"  | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8;   # pino AG
+NET "sseg<6>" LOC = "B4"  | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8;   # pino AA
+NET "sseg<5>" LOC = "D5"  | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8;   # pino AB
+NET "sseg<4>" LOC = "A6" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8;    # pino AC
+NET "sseg<3>" LOC = "E7" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8;    # pino AD
+NET "sseg<2>" LOC = "D7" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8;    # pino AE
+NET "sseg<1>" LOC = "F8" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8;    # pino AF
+NET "sseg<0>" LOC = "F9"  | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8;   # pino AG
 
 # =========================================================
 # Display de 7 segmentos - digit select
 # Adaptado do Lab04
 # =========================================================
-NET "sel" LOC = "C15" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8;        # pino C
+NET "sel" LOC = "D11" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8;        # pino C
