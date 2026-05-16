@@ -4,10 +4,17 @@ use IEEE.NUMERIC_STD.all;
 
 package lcd_utils_pkg is
 
+	subtype byte_t is STD_LOGIC_VECTOR(7 downto 0);
+	subtype nibble_t is STD_LOGIC_VECTOR(3 downto 0);
+	
+	type char_array_type is array (0 to 15) of byte_t;
+	type initcmd_array_type is array (0 to 3) of byte_t;
+
 	constant wait750k : unsigned(19 downto 0) := to_unsigned(750000, 20);
 	constant wait205k : unsigned(19 downto 0) := to_unsigned(205000, 20);
 	constant wait5k : unsigned(19 downto 0) := to_unsigned(5000, 20);
 	constant wait2k : unsigned(19 downto 0) := to_unsigned(2000, 20);
+	constant wait82 : unsigned(19 downto 0) := to_unsigned(82, 20);
 	constant wait12 : unsigned(19 downto 0) := to_unsigned(12, 20);
 	constant wait2 : unsigned(19 downto 0) := to_unsigned(2, 20);
 
