@@ -4,9 +4,9 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity lcd_init is
     Port ( DATA_INIT : out  STD_LOGIC_VECTOR (3 downto 0);
-           LCD_E_INIT : out  STD_LOGIC;
-           LCD_RS_INIT : out  STD_LOGIC;
-           LCD_RW_INIT : out  STD_LOGIC;
+           LCD_E_INIT : out  STD_LOGIC;		-- enable
+           LCD_RS_INIT : out  STD_LOGIC;		-- register select
+           LCD_RW_INIT : out  STD_LOGIC;		-- read / write
            LCD_INIT_DONE : out  STD_LOGIC;
 			  RST : in STD_LOGIC;
 			  CLK : in STD_LOGIC
@@ -48,6 +48,12 @@ architecture Behavioral of lcd_init is
 begin
 
 	process(CLK)
+		constant wait750k : unsigned(19 downto 0) := to_unsigned(750000, 20);
+		constant wait205k : unsigned(19 downto 0) := to_unsigned(205000, 20);
+		constant wait5k : unsigned(19 downto 0) := to_unsigned(5000, 20);
+		constant wait2k : unsigned(19 downto 0) := to_unsigned(2000, 20);
+		constant wait12 : unsigned(19 downto 0) := to_unsigned(12, 20);
+		constant wait2 : unsigned(19 downto 0) := to_unsigned(2, 20);
 	begin
 		
 		if rising_edge(CLK) then
@@ -60,11 +66,11 @@ begin
 					when STEP0 =>
 						DATA_INIT <= (others => '0');
 						LCD_E_INIT <= '0';
-						LCD_RS_INIT <= '1';		-- don't care?
+						LCD_RS_INIT <= '0';		-- registrador de instrucao
 						LCD_RW_INIT <= '1';
 						LCD_INIT_DONE <= '0';
 						increment_or_advance(
-							counter, to_unsigned(750000, 20),
+							counter, wait750k,
 							fsm, STEP1
 						);
 						
@@ -72,14 +78,14 @@ begin
 						DATA_INIT <= x"3";	-- 0x3
 						LCD_RW_INIT <= '0';	-- write
 						increment_or_advance(
-							counter, to_unsigned(2, 20),
+							counter, wait2,
 							fsm, STEP1_ENABLE
 						);
 						
 					when STEP1_ENABLE =>
 						LCD_E_INIT <= '1'; 	-- enable
 						increment_or_advance(
-							counter, to_unsigned(12, 20),		-- hold for 240 ns
+							counter, wait12,		-- hold for 240 ns
 							fsm, STEP2
 						);
 						
@@ -87,7 +93,7 @@ begin
 						LCD_E_INIT <= '0';	-- disable
 						LCD_RW_INIT <= '1';	-- read
 						increment_or_advance(
-							counter, to_unsigned(205000, 20),
+							counter, wait205k,
 							fsm, STEP3
 						);
 						
@@ -95,14 +101,14 @@ begin
 						-- data_init igual, nao precisa mudar
 						LCD_RW_INIT <= '0';	-- write
 						increment_or_advance(
-							counter, to_unsigned(2, 20),
+							counter, wait2,
 							fsm, STEP3_ENABLE
 						);
 					
 					when STEP3_ENABLE =>
 						LCD_E_INIT <= '1'; 	-- enable
 						increment_or_advance(
-							counter, to_unsigned(12, 20),	-- hold for 240 ns
+							counter, wait12,	-- hold for 240 ns
 							fsm, STEP4
 						);
 					
@@ -110,21 +116,21 @@ begin
 						LCD_E_INIT <= '0';	-- disable
 						LCD_RW_INIT <= '1';	-- read
 						increment_or_advance(
-							counter, to_unsigned(5000, 20),
+							counter, wait5k,
 							fsm, STEP5
 						);
 					
 					when STEP5 =>
 						LCD_RW_INIT <= '0';	-- write
 						increment_or_advance(
-							counter, to_unsigned(2, 20),
+							counter, wait2,
 							fsm, STEP5_ENABLE
 						);
 					
 					when STEP5_ENABLE =>
 						LCD_E_INIT <= '1'; 	-- enable
 						increment_or_advance(
-							counter, to_unsigned(12, 20),	-- hold for 240 ns
+							counter, wait12,	-- hold for 240 ns
 							fsm, STEP6
 						);
 					
@@ -132,7 +138,7 @@ begin
 						LCD_E_INIT <= '0';	-- disable
 						LCD_RW_INIT <= '1';	-- read
 						increment_or_advance(
-							counter, to_unsigned(2000, 20),
+							counter, wait2k,
 							fsm, STEP7
 						);
 					
@@ -140,14 +146,14 @@ begin
 						DATA_INIT <= x"2"; 	-- 0x2
 						LCD_RW_INIT <= '0';	-- write
 						increment_or_advance(
-							counter, to_unsigned(2, 20),
+							counter, wait2,
 							fsm, STEP7_ENABLE
 						);
 					
 					when STEP7_ENABLE =>
 						LCD_E_INIT <= '1';	-- enable
 						increment_or_advance(
-							counter, to_unsigned(12, 20),	-- hold for 240 ns
+							counter, wait12,	-- hold for 240 ns
 							fsm, STEP8
 						);
 					
@@ -155,7 +161,7 @@ begin
 						LCD_E_INIT <= '0';	-- disable
 						LCD_RW_INIT <= '1';	-- read
 						increment_or_advance(
-							counter, to_unsigned(2000, 20),	
+							counter, wait2k,	
 							fsm, DONE
 						);
 					
