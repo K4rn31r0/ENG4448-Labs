@@ -2,6 +2,8 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
+use work.lcd_utils_pkg.ALL;
+
 entity lcd_init is
     Port ( DATA_INIT : out  STD_LOGIC_VECTOR (3 downto 0);
            LCD_E_INIT : out  STD_LOGIC;		-- enable
@@ -30,30 +32,10 @@ architecture Behavioral of lcd_init is
 	signal fsm : init_fsm := STEP0;
 	signal counter : unsigned(19 downto 0) := (others => '0');
 	
-	procedure increment_or_advance (
-		signal counter 		: inout unsigned(19 downto 0);
-		constant limit 		: in unsigned(19 downto 0);
-		signal fsm 				: inout init_fsm;
-		constant next_state 	: in init_fsm
-	) is
-	begin 
-		if counter < limit then
-			counter <= counter + 1;
-		else 
-			counter <= (others => '0');
-			fsm <= next_state;
-		end if;
-	end procedure increment_or_advance;
-	
 begin
 
 	process(CLK)
-		constant wait750k : unsigned(19 downto 0) := to_unsigned(750000, 20);
-		constant wait205k : unsigned(19 downto 0) := to_unsigned(205000, 20);
-		constant wait5k : unsigned(19 downto 0) := to_unsigned(5000, 20);
-		constant wait2k : unsigned(19 downto 0) := to_unsigned(2000, 20);
-		constant wait12 : unsigned(19 downto 0) := to_unsigned(12, 20);
-		constant wait2 : unsigned(19 downto 0) := to_unsigned(2, 20);
+		variable time_up : boolean := false;	
 	begin
 		
 		if rising_edge(CLK) then
@@ -69,101 +51,114 @@ begin
 						LCD_RS_INIT <= '0';		-- registrador de instrucao
 						LCD_RW_INIT <= '1';
 						LCD_INIT_DONE <= '0';
-						increment_or_advance(
-							counter, wait750k,
-							fsm, STEP1
-						);
+						
+						increment_and_check(counter, wait750k, time_up);
+						if time_up then
+							 fsm <= STEP1;
+						end if;
 						
 					when STEP1 =>
 						DATA_INIT <= x"3";	-- 0x3
 						LCD_RW_INIT <= '0';	-- write
-						increment_or_advance(
-							counter, wait2,
-							fsm, STEP1_ENABLE
-						);
+						
+						increment_and_check(counter, wait2, time_up);
+						if time_up then
+							 fsm <= STEP1_ENABLE;
+						end if;
 						
 					when STEP1_ENABLE =>
 						LCD_E_INIT <= '1'; 	-- enable
-						increment_or_advance(
-							counter, wait12,		-- hold for 240 ns
-							fsm, STEP2
-						);
+						
+						increment_and_check(counter, wait12, time_up);
+						if time_up then
+							 fsm <= STEP2;
+						end if;
 						
 					when STEP2 =>
 						LCD_E_INIT <= '0';	-- disable
 						LCD_RW_INIT <= '1';	-- read
-						increment_or_advance(
-							counter, wait205k,
-							fsm, STEP3
-						);
+						
+						increment_and_check(counter, wait205k, time_up);
+						if time_up then
+							 fsm <= STEP3;
+						end if;
 						
 					when STEP3 =>
 						-- data_init igual, nao precisa mudar
 						LCD_RW_INIT <= '0';	-- write
-						increment_or_advance(
-							counter, wait2,
-							fsm, STEP3_ENABLE
-						);
+						
+						increment_and_check(counter, wait2, time_up);
+						if time_up then
+							 fsm <= STEP3_ENABLE;
+						end if;
 					
 					when STEP3_ENABLE =>
 						LCD_E_INIT <= '1'; 	-- enable
-						increment_or_advance(
-							counter, wait12,	-- hold for 240 ns
-							fsm, STEP4
-						);
+						
+						increment_and_check(counter, wait12, time_up);
+						if time_up then
+							 fsm <= STEP4;
+						end if;
 					
 					when STEP4 =>
 						LCD_E_INIT <= '0';	-- disable
 						LCD_RW_INIT <= '1';	-- read
-						increment_or_advance(
-							counter, wait5k,
-							fsm, STEP5
-						);
+						
+						increment_and_check(counter, wait5k, time_up);
+						if time_up then
+							 fsm <= STEP5;
+						end if;
 					
 					when STEP5 =>
 						LCD_RW_INIT <= '0';	-- write
-						increment_or_advance(
-							counter, wait2,
-							fsm, STEP5_ENABLE
-						);
+						
+						increment_and_check(counter, wait2, time_up);
+						if time_up then
+							 fsm <= STEP5_ENABLE;
+						end if;
 					
 					when STEP5_ENABLE =>
 						LCD_E_INIT <= '1'; 	-- enable
-						increment_or_advance(
-							counter, wait12,	-- hold for 240 ns
-							fsm, STEP6
-						);
+						
+						increment_and_check(counter, wait12, time_up);
+						if time_up then
+							 fsm <= STEP6;
+						end if;
 					
 					when STEP6 => 
 						LCD_E_INIT <= '0';	-- disable
 						LCD_RW_INIT <= '1';	-- read
-						increment_or_advance(
-							counter, wait2k,
-							fsm, STEP7
-						);
+						
+						increment_and_check(counter, wait2k, time_up);
+						if time_up then
+							 fsm <= STEP7;
+						end if;
 					
 					when STEP7 =>
 						DATA_INIT <= x"2"; 	-- 0x2
 						LCD_RW_INIT <= '0';	-- write
-						increment_or_advance(
-							counter, wait2,
-							fsm, STEP7_ENABLE
-						);
+						
+						increment_and_check(counter, wait2, time_up);
+						if time_up then
+							 fsm <= STEP7_ENABLE;
+						end if;
 					
 					when STEP7_ENABLE =>
 						LCD_E_INIT <= '1';	-- enable
-						increment_or_advance(
-							counter, wait12,	-- hold for 240 ns
-							fsm, STEP8
-						);
+						
+						increment_and_check(counter, wait12, time_up);
+						if time_up then
+							 fsm <= STEP8;
+						end if;
 					
 					when STEP8 => 
 						LCD_E_INIT <= '0';	-- disable
 						LCD_RW_INIT <= '1';	-- read
-						increment_or_advance(
-							counter, wait2k,	
-							fsm, DONE
-						);
+						
+						increment_and_check(counter, wait2k, time_up);
+						if time_up then
+							 fsm <= DONE;
+						end if;
 					
 					when DONE =>
 						LCD_INIT_DONE <= '1';	-- :)
