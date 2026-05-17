@@ -162,7 +162,7 @@ begin		-- architecture
 						LCD_E <= '0';
 						LCD_RW <= '1';
 						
-						if (m_state = SEND_CONFIG) and (cmd_idx = 3) then
+						if (m_state = SEND_CONFIG) and (idx_cmd = 3) then
 							increment_and_check(counter, wait82k, time_up);		-- clear display pede 1.62 ms
 						else 
 							increment_and_check(counter, wait2k, time_up);
