@@ -12,9 +12,10 @@ package lcd_utils_pkg is
 
 	constant wait750k : unsigned(19 downto 0) := to_unsigned(750000, 20);
 	constant wait205k : unsigned(19 downto 0) := to_unsigned(205000, 20);
+	constant wait82k : unsigned(19 downto 0) := to_unsigned(82000, 20);
 	constant wait5k : unsigned(19 downto 0) := to_unsigned(5000, 20);
 	constant wait2k : unsigned(19 downto 0) := to_unsigned(2000, 20);
-	constant wait82 : unsigned(19 downto 0) := to_unsigned(82, 20);
+	constant wait50 : unsigned(19 downto 0) := to_unsigned(50, 20);
 	constant wait12 : unsigned(19 downto 0) := to_unsigned(12, 20);
 	constant wait2 : unsigned(19 downto 0) := to_unsigned(2, 20);
 
