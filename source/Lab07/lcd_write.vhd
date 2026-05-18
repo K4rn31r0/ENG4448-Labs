@@ -86,7 +86,7 @@ begin		-- architecture
 				m_state <= SEND_CONFIG;
 				setup_finished <= '0';
 				idx_cmd <= 0;
-				idx_char <= 0;
+				idx_char <= 0;		
 			else 
 				case write_state is
 				
@@ -118,6 +118,12 @@ begin		-- architecture
 								null; 		-- parou
 							
 							end if;
+						
+						else 		-- estado padrao esperando o init
+							DATA_OUT <= (others => '0');
+							LCD_E <= '0';
+							LCD_RS <= '0';
+						   LCD_RW <= '1';
 						end if;
 					
 					when UPPER_NIBBLE =>
