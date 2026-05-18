@@ -105,14 +105,14 @@ begin		-- architecture
 								write_state <= UPPER_NIBBLE;
 								
 							elsif m_state = LINE_CHANGE then
-								byte_to_send <= x"40";	-- SET DD RAM ADDR 0x40
+								byte_to_send <= x"C0";	-- SET DD RAM ADDR 0x40
 								LCD_RS <= '0';		-- comando
 								write_state <= UPPER_NIBBLE;
 							
 							elsif m_state = SEND_LINE2 then
 								byte_to_send <= SECOND_LINE(idx_char);
-							   LCD_RS <= '1';
-							   write_state <= UPPER_NIBBLE;
+							    LCD_RS <= '1';
+							    write_state <= UPPER_NIBBLE;
 							
 							elsif m_state = DONE then
 								null; 		-- parou
@@ -123,7 +123,7 @@ begin		-- architecture
 							DATA_OUT <= (others => '0');
 							LCD_E <= '0';
 							LCD_RS <= '0';
-						   LCD_RW <= '1';
+						    LCD_RW <= '1';
 						end if;
 					
 					when UPPER_NIBBLE =>
