@@ -8,7 +8,7 @@ entity dac_ctrl is
 			  SAMPLE_ROM_SIZE   : natural := 16 	-- # de amostras
 	 );
     Port ( CLK50		  : in STD_LOGIC;
-		   SPI_MOSI : out  STD_LOGIC;
+		     SPI_MOSI : out  STD_LOGIC;
            DAC_CS : out  STD_LOGIC;
            SPI_SCK : out  STD_LOGIC;
            DAC_CLR : out  STD_LOGIC);
