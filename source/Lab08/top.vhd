@@ -19,10 +19,6 @@ architecture Structural of top is
 begin
 
 	u_dac_ctrl : entity work.dac_ctrl(Behavioral)
-		generic map (
-			DIV_FACTOR => 8,
-			SAMPLE_ROM_SIZE => 16
-		)
 		port map (
 			CLK50 => CLK,
 			SPI_MOSI => SPI_MOSI,
