@@ -55,6 +55,10 @@ architecture Behavioral of pixel_ctrl is
 	
 	-- sinais intermediarios das cores
 	signal red_int, green_int, blue_int : STD_LOGIC;
+	
+	-- sinais auxiliares pro xadrez
+	signal   col_toggle : STD_LOGIC := '0';
+	signal   row_toggle : STD_LOGIC := '0';
 
 begin
 
@@ -74,7 +78,7 @@ begin
 			
 			-- XADREZ preto-branco na metade inferior da tela:
 			if (py > 300) then
-				if ((px / 50 + py / 50) mod 2 = 0) then
+				if (col_toggle xor row_toggle) = '0' then
 					within_area <= BACKGROUND;
 				else
 					within_area <= NOTHING;
@@ -115,6 +119,39 @@ begin
 					
 		end if;
 	end process find_region;
+	
+	
+	-- processo para desenhar o xadrez
+	chess_proc : process(pixel_clock)
+		 variable col_count : NATURAL range 0 to 49 := 0;
+		 variable row_count : NATURAL range 0 to 49 := 0;
+	begin
+		 if rising_edge(pixel_clock) then
+			  -- conta colunas de 50 pixels
+			  if pixel_x = 0 then
+					col_count  := 0;
+					col_toggle <= '0';
+			  elsif col_count = 49 then
+					col_count  := 0;
+					col_toggle <= not col_toggle;
+			  else
+					col_count := col_count + 1;
+			  end if;
+
+			  -- conta linhas de 50 pixels (apenas quando comeca nova linha)
+			  if pixel_x = 0 then
+					if pixel_y = 0 then
+						 row_count  := 0;
+						 row_toggle <= '0';
+					elsif row_count = 49 then
+						 row_count  := 0;
+						 row_toggle <= not row_toggle;
+					else
+						 row_count := row_count + 1;
+					end if;
+			  end if;
+		 end if;
+	end process;
 	
 	
 	-- triangulo vermelho, quadrado verde, circulo magenta,
