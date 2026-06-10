@@ -119,7 +119,7 @@ begin
 
 				when AMP_LATCH =>
 					-- a subida que amostra o bit 0 e onde latcheamos o ganho
-					if sck_rise = '1' then
+					if sck_fall = '1' then
 						amp_cs_r <= '1';							-- CS volta a High: ganho aplicado
 						state    <= ADC_PREP;
 					end if;
@@ -148,7 +148,7 @@ begin
 				when ADC_LATCH =>
 					-- canal A (VINA) = primeira palavra de 14 bits apos 2 ciclos em Hi-Z.
 					-- ciclo k capturado em adc_shift(ADC_CYCLES-k); canal A = ciclos 3..16.
-					ch0 := signed(adc_shift(31 downto 18));
+					ch0 := signed(adc_shift(30 downto 17));
 					-- ganho -1: tensao sobe => D fica mais negativo. Normaliza para 0..16383
 					-- crescente com a tensao (VIN=0.4V -> 0 ; VIN=2.9V -> 16383).
 					lvl := 8191 - to_integer(ch0);
@@ -161,7 +161,7 @@ begin
 							led_reg(i) <= '0';
 						end if;
 					end loop;
-					state <= ADC_PREP;						-- proxima amostra
+					state <= AMP_CS_LOW;						-- proxima amostra
 
 			end case;
 		end if;
