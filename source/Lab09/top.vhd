@@ -37,6 +37,6 @@ begin
 	SPI_SS_B    <= '1';
 	DAC_CS      <= '1';
 	SF_CE0      <= '1';
-	FPGA_INIT_B <= '1';
+	FPGA_INIT_B <= '0';
 
 end Structural;
