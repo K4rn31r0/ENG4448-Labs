@@ -14,7 +14,6 @@ package lcd_utils_pkg is
     function decimal_size(n: integer) return integer;
     function to_bcd(Binary : unsigned) return unsigned;
 
-    -- 3. Declaração das Constantes (Usando as funções acima)
     constant STR_ADD  : rom_str := to_std_logic_vector("add Rx, Ry      ");
     constant STR_SUB  : rom_str := to_std_logic_vector("sub Rx, Ry      ");
     constant STR_INC  : rom_str := to_std_logic_vector("inc Rx          ");
@@ -98,7 +97,7 @@ package body lcd_utils_pkg is
         return integer(ceil(log10(real(n + 1))));
     end function decimal_size;
 
-    -- Implementação 3: BCD
+    -- Binario para BCD
     function to_bcd(Binary : unsigned) return unsigned is
         variable b             : unsigned(Binary'length - 1 downto 0) := Binary;
         constant DIGITS        : natural := decimal_size(2 ** Binary'length - 1);

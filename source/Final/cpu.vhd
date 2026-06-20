@@ -32,9 +32,6 @@ architecture Behavioral of cpu is
     signal ALU_S     : STD_LOGIC_VECTOR(7 downto 0) := x"00";
     signal ALU_FLAGS : STD_LOGIC_VECTOR(4 downto 0) := "00000";
     signal ALU_CMD   : STD_LOGIC_VECTOR(3 downto 0) := x"0";
-    signal ALU_CIN   : STD_LOGIC := '0';
-    signal ALU_COUT  : STD_LOGIC := '0';
-
 
 begin
 
@@ -43,8 +40,6 @@ begin
             A         => ALU_A,
             B         => ALU_B,
             CMD       => ALU_CMD,
-            C_in      => ALU_CIN,
-            C_out     => ALU_COUT,
             FLAGS     => ALU_FLAGS,
             S         => ALU_S
         );
