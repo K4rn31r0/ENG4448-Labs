@@ -18,11 +18,11 @@ end cpu;
 architecture Behavioral of cpu is        
     
     -- registradores
-	 signal IR : STD_LOGIC_VECTOR(7 downto 0) := (others => '0');
-	 signal PC : UNSIGNED(7 downto 0) := (others => '0');
+	signal IR : STD_LOGIC_VECTOR(7 downto 0) := (others => '0');
+	signal PC : UNSIGNED(7 downto 0) := (others => '0');
     signal SP : UNSIGNED(7 downto 0) := to_unsigned(254, 8);
-	 signal MAR: UNSIGNED(7 downto 0) := (others => '0');
-	 signal MBR: STD_LOGIC_VECTOR(7 downto 0) := (others => '0');
+	signal MAR: UNSIGNED(7 downto 0) := (others => '0');
+	signal MBR: STD_LOGIC_VECTOR(7 downto 0) := (others => '0');
 	 -- IR vira STD_LOGIC_VECTOR porque se trata sempre de uma instrucao
 	 -- MBR vira STD_LOGIC_VECTOR porque o buffer pode conter qualquer coisa
     
@@ -57,9 +57,9 @@ begin
                 -- registradores
                 REG <= (others => x"00");
                 PC  <= (others => '0');
-					 IR  <= (others => '0');
-					 MAR <= (others => '0');
-					 MBR <= (others => '0');			 
+				IR  <= (others => '0');
+				MAR <= (others => '0');
+				MBR <= (others => '0');			 
                 SP  <= x"FE";					-- SP precisa ser 254
 					 
                 STATE         <= FETCH;
@@ -68,8 +68,8 @@ begin
                 case STATE is
 
                     when FETCH =>
-								WE <= '0';				-- read!
-								IR <= RAM_DOUT;		-- ler posicao indicada pelo PC
+						WE <= '0';				-- read!
+						IR <= RAM_DOUT;		-- ler posicao indicada pelo PC
                         STATE <= DECODE_1;	-- mas so teremos o resultado no falling_edge...
                     
                     when DECODE_1 =>
@@ -88,7 +88,7 @@ begin
                         STATE <= EXECUTE;
 
                     when EXECUTE =>
-								WE <= '0';
+						WE <= '0';
                         -- add Rx, Ry
                         -- OPCODE "0000" & Rx & Ry
                         -- Rx <- Rx + Ry, pc <- pc + 1
@@ -109,8 +109,8 @@ begin
     end process;
     
     RAM_ADDR <= std_logic_vector(MAR);
-	 RAM_DIN  <= MBR;
-	 -- o dado em MBR e DIN vai escrito apenas quando WE='1'
+	RAM_DIN  <= MBR;
+	-- o dado em MBR e DIN vai escrito apenas quando WE='1'
     
 end Behavioral;
 
