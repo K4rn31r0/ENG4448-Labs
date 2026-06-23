@@ -57,7 +57,7 @@ begin
 		variable ry : integer range 0 to 3;
     begin
         if rising_edge(CLK) then
-			-- atualizar indices dos registradores
+			-- atualizar os indices
 			rx := to_integer(unsigned(IR(3 downto 2)));
 			ry := to_integer(unsigned(IR(1 downto 0)));
 			
@@ -76,6 +76,7 @@ begin
                     when FETCH =>
 						WE <= '0';			-- read!
 						IR <= RAM_DOUT;		-- a instrucao ja esta disponivel na DOUT
+						PC <= PC + 1;		-- incrementa PC agora
                         STATE <= DECODE_1;
 						
                     
@@ -97,9 +98,9 @@ begin
 										SP  <= SP + 1;	-- desempilhar
 										MAR <= SP + 1;	-- o dado no topo da pilha
 									elsif IR(1 downto 0) = "10" then				-- STORE
-										MAR <= PC + 1;	-- endereco para escrever
+										MAR <= PC;		-- endereco para escrever
 									else 											-- LOAD
-										MAR <= PC + 1;	-- endereco para ler
+										MAR <= PC;		-- endereco para ler
 									end if;
 								
 								when "001" =>										-- LOAD REGISTER
@@ -117,7 +118,8 @@ begin
 								
 								when "100" =>
 									if IR(1 downto 0) = "00" then					-- JUMP
-										MAR <= PC + 1;	-- pular para MEM[PC+1]
+										MAR <= PC;	-- pular para MEM[PC+1]
+										-- o PC ja foi incrementado no FETCH! 
 									elsif IR(1 downto 0) = "01" then				-- JUMP REGISTER
 										PC <= unsigned(REG(rx));										
 									elsif IR(1 downto 0) = "10" then				-- BRANCH ON ZERO
@@ -161,9 +163,41 @@ begin
 						
 
                     when DECODE_2 =>
-                        if IR(7) = "0" then -- instruções de ALU
-                            NULL; -- iremos salvar o dado da operação com a ALU no estado EXECUTE
-                        end if;
+                        -- nesse estado, nao precisa fazer nada quanto a instrucoes da ALU
+						-- apenas desativar o write por padrao para evitar escrever sem querer
+						WE <= '0';
+						
+						case IR(6 downto 4) is
+							when "000" =>
+								if IR(1 downto 0) = "00" then					-- PUSH
+									NULL;			-- ja foi escrito na pilha
+								elsif IR(1 downto 0) = "01" then				-- POP
+									MBR <= RAM_DOUT;
+								elsif IR(1 downto 0) = "10" then				-- STORE
+									-- MAR recebe o endereco-alvo:
+									MAR <= unsigned(RAM_DOUT);
+									MBR <= reg(rx);	-- o dado a ser escrito
+									WE  <= '1';		-- write!
+									PC  <= PC + 1;	-- pular o byte do endereco
+								else 											-- LOAD
+									MBR <= RAM_DOUT;
+									PC  <= PC + 1;	-- pular o byte do valor
+								end if;
+							
+							when "001" =>										-- LOAD REGISTER
+								MBR <= RAM_DOUT;	-- dado ja foi lido!
+							
+							when "100" =>
+								if IR(1 downto 0) = "00" then					-- JUMP
+									-- o PC passa a ter o valor lido da memoria
+									PC <= unsigned(RAM_DOUT);
+								end if;		
+							
+							-- as outras instrucoes que nao foram mencionadas nesse estado
+							-- nao requerem nenhuma acao adicional por enquanto
+							when others => NULL;
+							
+						end case;
                         
                         STATE <= EXECUTE;
 						
