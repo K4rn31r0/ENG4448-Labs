@@ -23,11 +23,12 @@ architecture Behavioral of cpu is
     signal SP : UNSIGNED(7 downto 0) := to_unsigned(254, 8);
 	signal MAR: UNSIGNED(7 downto 0) := (others => '0');
 	signal MBR: STD_LOGIC_VECTOR(7 downto 0) := (others => '0');
-	 -- IR vira STD_LOGIC_VECTOR porque se trata sempre de uma instrucao
-	 -- MBR vira STD_LOGIC_VECTOR porque o buffer pode conter qualquer coisa
+	-- IR vira STD_LOGIC_VECTOR porque se trata sempre de uma instrucao
+	-- MBR vira STD_LOGIC_VECTOR porque o buffer pode conter qualquer coisa
     
+	-- A=0, B=1, C=2, D=3 
     type reg_t is array (natural range <>) of STD_LOGIC_VECTOR(7 downto 0);
-    signal REG       : reg_t(3 downto 0); -- 4 regs (REG A,B,C,D)
+    signal REG       : reg_t(3 downto 0);
     
     -- FSM para as operacoes da cpu
     type FSM_CPU is (FETCH, DECODE_1, DECODE_2, EXECUTE);
@@ -51,34 +52,113 @@ begin
         );
     
     p_fsm_cycle : process(CLK)
+		-- variaveis locais (simplifica indices dos registradores)
+		variable rx : integer range 0 to 3;
+		variable ry : integer range 0 to 3;
     begin
         if rising_edge(CLK) then
+			-- atualizar indices dos registradores
+			rx := to_integer(unsigned(IR(3 downto 2)));
+			ry := to_integer(unsigned(IR(1 downto 0)));
+			
             if (RESET = '1') then
-                -- registradores
                 REG <= (others => x"00");
                 PC  <= (others => '0');
 				IR  <= (others => '0');
 				MAR <= (others => '0');
 				MBR <= (others => '0');			 
-                SP  <= x"FE";					-- SP precisa ser 254
-					 
-                STATE         <= FETCH;
+                SP  <= x"FE";				-- SP precisa ser 254
+				WE  <= '0';
+                STATE <= FETCH;
 					 
             else
                 case STATE is
-
                     when FETCH =>
-						WE <= '0';				-- read!
-						IR <= RAM_DOUT;		-- ler posicao indicada pelo PC
-                        STATE <= DECODE_1;	-- mas so teremos o resultado no falling_edge...
+						WE <= '0';			-- read!
+						IR <= RAM_DOUT;		-- a instrucao ja esta disponivel na DOUT
+                        STATE <= DECODE_1;
+						
                     
                     when DECODE_1 =>
                         if IR(7) = '0' then 	-- instruções de ALU
-                            ALU_A <= REG( to_integer(unsigned(IR(3 downto 2))) );
-                            ALU_B <= REG( to_integer(unsigned(IR(1 downto 0))) );
+                            ALU_A <= REG( rx );
+                            ALU_B <= REG( ry );
                             ALU_CMD <= IR(6 downto 4) & IR(1 downto 0);
+						
+						else
+							case IR(6 downto 4) is
+								when "000" =>
+									if IR(1 downto 0) = "00" then					-- PUSH
+										WE  <= '1';		-- write 
+										MAR <= SP;		-- na posicao do SP
+										MBR <= REG(rx);	-- o dado em Rx
+										SP  <= SP - 1;	-- empilhar
+									elsif IR(1 downto 0) = "01" then				-- POP
+										SP  <= SP + 1;	-- desempilhar
+										MAR <= SP + 1;	-- o dado no topo da pilha
+									elsif IR(1 downto 0) = "10" then				-- STORE
+										MAR <= PC + 1;	-- endereco para escrever
+									else 											-- LOAD
+										MAR <= PC + 1;	-- endereco para ler
+									end if;
+								
+								when "001" =>										-- LOAD REGISTER
+									MAR <= unsigned(REG(ry));
+								
+								when "010" =>										-- STORE REGISTER
+									-- aqui, precisamos escrever na memoria
+									-- usamos o MBR (buffer) com write enable
+									MBR <= REG(rx);
+									MAR <= unsigned(REG(ry)); 
+									WE  <= '1';
+								
+								when "011" =>										-- MOVE
+									REG(rx) <= REG(ry);
+								
+								when "100" =>
+									if IR(1 downto 0) = "00" then					-- JUMP
+										MAR <= PC + 1;	-- pular para MEM[PC+1]
+									elsif IR(1 downto 0) = "01" then				-- JUMP REGISTER
+										PC <= unsigned(REG(rx));										
+									elsif IR(1 downto 0) = "10" then				-- BRANCH ON ZERO
+										if ALU_FLAGS(1)='1' then 
+										PC <= unsigned(REG(rx)); end if;
+									else											-- BRANCH ON NOT ZERO
+										if ALU_FLAGS(1)='0' then 
+										PC <= unsigned(REG(rx)); end if;
+									end if;
+								
+								when "101" =>
+									if IR(1 downto 0) = "00" then					-- BRANCH ON CARRY
+										if ALU_FLAGS(0)='1' then 
+										PC <= unsigned(REG(rx)); end if;
+									elsif IR(1 downto 0) = "01" then				-- BRANCH ON NOT CARRY
+										if ALU_FLAGS(0)='0' then 
+										PC <= unsigned(REG(rx)); end if;
+									elsif IR(1 downto 0) = "10" then				-- BRANCH ON EQUAL
+										if ALU_FLAGS(4)='1' then 
+										PC <= unsigned(REG(rx)); end if;
+									else											-- BRANCH ON NOT EQUAL
+										if ALU_FLAGS(4)='0' then 
+										PC <= unsigned(REG(rx)); end if;
+									end if;
+								
+								when "110" =>
+									if IR(1 downto 0) = "00" then					-- BRANCH ON GREATER
+										if ALU_FLAGS(3)='1' then 
+										PC <= unsigned(REG(rx)); end if;
+									elsif IR(1 downto 0) = "01" then				-- BRANCH ON SMALLER
+										if ALU_FLAGS(2)='1' then 
+										PC <= unsigned(REG(rx)); end if;
+									end if;
+								
+								when others => NULL;
+								
+							end case;
                         end if;
+						
                         STATE <= DECODE_2;
+						
 
                     when DECODE_2 =>
                         if IR(7) = "0" then -- instruções de ALU
@@ -86,12 +166,11 @@ begin
                         end if;
                         
                         STATE <= EXECUTE;
+						
 
                     when EXECUTE =>
-						WE <= '0';
-                        -- add Rx, Ry
-                        -- OPCODE "0000" & Rx & Ry
-                        -- Rx <- Rx + Ry, pc <- pc + 1
+						WE <= '0';			-- para ler a proxima instrucao
+
                         if IR(7) = '0' then -- instruções de ALU
                             REG( to_integer(unsigned(IR(3 downto 2))) ) <= ALU_S;
                             PC  <= PC + 1;
@@ -99,6 +178,7 @@ begin
                         end if;
 
                         STATE <= FETCH;
+						
                         
                     when others =>
                         STATE <= FETCH;
