@@ -203,15 +203,32 @@ begin
 						
 
                     when EXECUTE =>
-						WE <= '0';			-- para ler a proxima instrucao
-
-                        if IR(7) = '0' then -- instruções de ALU
-                            REG( to_integer(unsigned(IR(3 downto 2))) ) <= ALU_S;
-                            PC  <= PC + 1;
-                            MAR <= PC + 1;
+						WE <= '0';		-- para ler a proxima instrucao
+						
+                        if IR(7) = '0' then
+                            REG( rx ) <= ALU_S;		-- salvar resultados da ALU
+							
+						else
+							case IR(6 downto 4) is
+								when "000" =>
+									if IR(0) = '1' then		-- POP ou LOAD:
+										REG(rx) <= MBR;		-- salvar no registrador certo
+									end if;
+								
+								when "001" =>				-- LOAD REGISTER
+									REG(rx) <= MBR;			-- idem
+								
+								when others => NULL;
+								
+								end case;
                         end if;
-
-                        STATE <= FETCH;
+						
+						if IR(7 downto 4) = "1111" then
+                            STATE <= EXECUTE; -- HALT: Congela a FSM neste estado para sempre
+                        else
+                            MAR   <= PC;    -- importante: apontar o MAR para o proximo fetch!!
+                            STATE <= FETCH;
+                        end if;
 						
                         
                     when others =>
@@ -224,7 +241,7 @@ begin
     
     RAM_ADDR <= std_logic_vector(MAR);
 	RAM_DIN  <= MBR;
-	-- o dado em MBR e DIN vai escrito apenas quando WE='1'
+	-- o dado em MBR e DIN vai ser escrito apenas quando WE='1'
     
 end Behavioral;
 
