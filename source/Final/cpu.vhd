@@ -5,6 +5,7 @@ use IEEE.NUMERIC_STD.ALL;
 entity cpu is
     port (
         CLK            : in     STD_LOGIC;
+		RESET		   : in 	STD_LOGIC;
         -- CPU / RAM
         RAM_DIN         : out std_logic_vector(7 downto 0);
         RAM_DOUT        : in  std_logic_vector(7 downto 0);
