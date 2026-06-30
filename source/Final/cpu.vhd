@@ -10,8 +10,9 @@ entity cpu is
         RAM_DIN         : out std_logic_vector(7 downto 0);
         RAM_DOUT        : in  std_logic_vector(7 downto 0);
         RAM_ADDR        : out std_logic_vector(7 downto 0);
-        WE              : out std_logic
-        -- 
+        WE              : out std_logic;
+        -- CPU / FLAGS
+		FLAGS			: out std_logic_vector(4 downto 0)
         
     );
 end cpu;
@@ -243,6 +244,8 @@ begin
     RAM_ADDR <= std_logic_vector(MAR);
 	RAM_DIN  <= MBR;
 	-- o dado em MBR e DIN vai ser escrito apenas quando WE='1'
+	
+	FLAGS <= ALU_FLAGS;
     
 end Behavioral;
 

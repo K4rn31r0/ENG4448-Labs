@@ -4,7 +4,9 @@ use IEEE.STD_LOGIC_1164.ALL;
 
 entity main is
     Port ( CLK50 : in  STD_LOGIC;
-           RST : in  STD_LOGIC);
+           RST : in  STD_LOGIC;
+		   FLAGS : out STD_LOGIC_VECTOR(4 downto 0)
+		   );
 end main;
 
 architecture Structural of main is
@@ -29,7 +31,8 @@ begin
 			RAM_DIN => r_RAM_DIN,
 			RAM_DOUT => r_RAM_DOUT,
 			RAM_ADDR => r_RAM_ADDR,
-			WE => r_WE
+			WE => r_WE,
+			FLAGS => FLAGS
 		);
 	
 	u_memory : entity work.memory(rtl) 
