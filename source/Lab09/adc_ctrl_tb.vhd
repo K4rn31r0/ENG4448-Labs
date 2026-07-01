@@ -37,10 +37,12 @@ ARCHITECTURE behavior OF adc_ctrl_tb IS
    constant CLK50_period : time := 20 ns;
 
    -- Padrao de teste do ADC (34 bits, na ordem ciclo 1 -> ciclo 34):
-   --   2 ciclos Hi-Z | canal A (14 bits) | 2 Hi-Z | canal B (14 bits) | 2 Hi-Z
+   --   3 ciclos de lideranca | canal A (14 bits) | canal B (14 bits) | 3 ciclos
+   -- O controlador extrai o canal A de adc_shift(30 downto 17), ou seja, dos
+   -- ciclos 4..17; portanto o canal A deve comecar no ciclo 4 (3 bits antes).
    -- canal A = "10000000000000" = -8192 (two's complement) => VIN maxima => 8 LEDs.
    constant MISO_VEC : std_logic_vector(33 downto 0) :=
-       "00" & "10000000000000" & "00" & "00000000000000" & "00";
+       "000" & "10000000000000" & "00000000000000" & "000";
 
 BEGIN
 
