@@ -46,6 +46,37 @@ package lcd_utils_pkg is
     constant STR_BLT  : rom_str := to_std_logic_vector("blt Rx          ");
     constant STR_BLEZ : rom_str := to_std_logic_vector("blez Rx         "); 
     constant STR_HALT : rom_str := to_std_logic_vector("halt            ");
+    constant STR_MOV  : rom_str := to_std_logic_vector("mov Rx, Ry      ");
+    constant STR_ST   : rom_str := to_std_logic_vector("st Rx, 0x--     ");
+    constant STR_INVALID : rom_str := to_std_logic_vector("invalid instr.  ");
+
+    -- ============ infra do controlador de LCD (portada do Lab07) ============
+    subtype byte_t   is STD_LOGIC_VECTOR(7 downto 0);
+    subtype nibble_t is STD_LOGIC_VECTOR(3 downto 0);
+
+    type char_array_type    is array (0 to 15) of byte_t;
+    type initcmd_array_type is array (0 to 3)  of byte_t;
+
+    constant wait750k : unsigned(19 downto 0) := to_unsigned(750000, 20);
+    constant wait205k : unsigned(19 downto 0) := to_unsigned(205000, 20);
+    constant wait82k  : unsigned(19 downto 0) := to_unsigned(82000, 20);
+    constant wait5k   : unsigned(19 downto 0) := to_unsigned(5000, 20);
+    constant wait2k   : unsigned(19 downto 0) := to_unsigned(2000, 20);
+    constant wait50   : unsigned(19 downto 0) := to_unsigned(50, 20);
+    constant wait12   : unsigned(19 downto 0) := to_unsigned(12, 20);
+    constant wait2    : unsigned(19 downto 0) := to_unsigned(2, 20);
+
+    procedure increment_and_check (
+        signal counter   : inout unsigned(19 downto 0);
+        constant limit   : in unsigned(19 downto 0);
+        variable is_done : out boolean
+    );
+
+    -- decodificacao para o LCD:
+    --   linha 1 = nome da instrucao (a partir do IR)
+    --   linha 2 = "MEM[255]=<valor decimal>"
+    function ir_to_line(ir : std_logic_vector(7 downto 0)) return rom_str;
+    function pos255_to_line(pos : std_logic_vector(7 downto 0)) return rom_str;
 
     -- ROM de opcodes
     constant TEXT_MAP_ROM : TEXT_MAP_ROM_t := (
@@ -83,9 +114,11 @@ package body lcd_utils_pkg is
     -- String para std_logic_vector linear
     function to_std_logic_vector(a : string) return std_logic_vector is
         variable ret : std_logic_vector(a'length*8-1 downto 0);
+        variable idx : integer;                 -- posicao 0-based do caractere
     begin
         for i in a'range loop
-            ret(i*8+7 downto i*8) := std_logic_vector(to_unsigned(character'pos(a(i)), 8));
+            idx := i - a'low;                   -- strings sao 1-based; normaliza p/ 0
+            ret(idx*8+7 downto idx*8) := std_logic_vector(to_unsigned(character'pos(a(i)), 8));
         end loop;
         return ret;
     end function to_std_logic_vector;
@@ -113,6 +146,96 @@ package body lcd_utils_pkg is
             b   := b(b'left - 1 downto 0) & '0';
         end loop; 
         return bcd;
+    end function;
+
+    procedure increment_and_check (
+        signal counter   : inout unsigned(19 downto 0);
+        constant limit   : in unsigned(19 downto 0);
+        variable is_done : out boolean
+    ) is
+    begin
+        if counter < limit - 1 then
+            counter <= counter + 1;
+            is_done := false;
+        else
+            counter <= (others => '0');
+            is_done := true;
+        end if;
+    end procedure;
+
+    -- Decodifica o IR no nome (mnemonico) da instrucao (16 caracteres).
+    function ir_to_line(ir : std_logic_vector(7 downto 0)) return rom_str is
+        variable op  : std_logic_vector(3 downto 0);
+        variable det : std_logic_vector(1 downto 0);
+    begin
+        op  := ir(7 downto 4);
+        det := ir(1 downto 0);
+        case op is
+            when "0000" => return STR_ADD;
+            when "0001" => return STR_SUB;
+            when "0010" =>
+                case det is
+                    when "00"   => return STR_INC;
+                    when "01"   => return STR_DEC;
+                    when "10"   => return STR_INCC;
+                    when others => return STR_DECC;
+                end case;
+            when "0011" => return STR_AND;
+            when "0100" => return STR_OR;
+            when "0101" => return STR_NOT;
+            when "0110" => return STR_XOR;
+            when "0111" =>
+                case det is
+                    when "00"   => return STR_ROL;
+                    when "01"   => return STR_ROR;
+                    when "10"   => return STR_LSL;
+                    when others => return STR_LSR;
+                end case;
+            when "1000" =>
+                case det is
+                    when "00"   => return STR_PUSH;
+                    when "01"   => return STR_POP;
+                    when "10"   => return STR_ST;
+                    when others => return STR_LD;
+                end case;
+            when "1001" => return STR_LDR;
+            when "1010" => return STR_STR;
+            when "1011" => return STR_MOV;
+            when "1100" =>
+                case det is
+                    when "00"   => return STR_JMP;
+                    when "01"   => return STR_JMPR;
+                    when "10"   => return STR_BZ;
+                    when others => return STR_BNZ;
+                end case;
+            when "1101" =>
+                case det is
+                    when "00"   => return STR_BCS;
+                    when "01"   => return STR_BCC;
+                    when "10"   => return STR_BEQ;
+                    when others => return STR_BNEQ;
+                end case;
+            when "1110" =>
+                case det is
+                    when "00"   => return STR_BGT;
+                    when "01"   => return STR_BLT;
+                    when others => return STR_INVALID;
+                end case;
+            when "1111" => return STR_HALT;
+            when others => return STR_INVALID;
+        end case;
+    end function;
+
+    -- Monta "MEM[255]=DDD    " com o valor decimal (double-dabble via to_bcd).
+    function pos255_to_line(pos : std_logic_vector(7 downto 0)) return rom_str is
+        variable base : rom_str := to_std_logic_vector("MEM[255]=000    ");
+        variable bcd  : unsigned(11 downto 0);
+    begin
+        bcd := to_bcd(unsigned(pos));           -- 3 digitos (0..255)
+        base(19) := std_logic_vector(bcd(11 downto 8));  -- centenas
+        base(21) := std_logic_vector(bcd(7 downto 4));   -- dezenas
+        base(23) := std_logic_vector(bcd(3 downto 0));   -- unidades
+        return base;
     end function;
 
 end package body lcd_utils_pkg;

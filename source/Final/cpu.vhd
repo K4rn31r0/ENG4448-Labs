@@ -11,9 +11,11 @@ entity cpu is
         RAM_DOUT        : in  std_logic_vector(7 downto 0);
         RAM_ADDR        : out std_logic_vector(7 downto 0);
         WE              : out std_logic;
+        -- IR espelhado para o LCD
+        IR_OUT          : out std_logic_vector(7 downto 0);
         -- CPU / FLAGS
 		FLAGS			: out std_logic_vector(4 downto 0)
-        
+
     );
 end cpu;
 
@@ -83,7 +85,7 @@ begin
 						
                     
                     when DECODE_1 =>
-                        if IR(7) = '0' then 	-- instruções de ALU
+                        if IR(7) = '0' then 	-- instruï¿½ï¿½es de ALU
                             ALU_A <= REG( rx );
                             ALU_B <= REG( ry );
                             ALU_CMD <= IR(6 downto 4) & IR(1 downto 0);
@@ -244,7 +246,8 @@ begin
     RAM_ADDR <= std_logic_vector(MAR);
 	RAM_DIN  <= MBR;
 	-- o dado em MBR e DIN vai ser escrito apenas quando WE='1'
-	
+
+	IR_OUT <= IR;			-- espelha a instrucao corrente para o LCD
 	FLAGS <= ALU_FLAGS;
     
 end Behavioral;
