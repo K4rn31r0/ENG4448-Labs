@@ -4,10 +4,10 @@
 
 # Clock & Reset
 NET "CLK50" LOC = "C9" | IOSTANDARD = LVCMOS33 ;
-NET "RST" LOC = "K17" | IOSTANDARD = LVTTL | PULLDOWN ;
+NET "RST" LOC = "L13" | IOSTANDARD = LVTTL | PULLDOWN ;
 
 # O CLK lento eh gerado internamente pelo clk_gen
-NET "CLK_LED"  LOC = "D11" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
+NET "CLK_LED"  LOC = "F9" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
 
 # Flags nos LEDs
 NET "FLAGS<4>" LOC = "C11" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
