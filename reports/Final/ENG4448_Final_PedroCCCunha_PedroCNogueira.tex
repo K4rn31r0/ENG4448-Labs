@@ -1,0 +1,731 @@
+\documentclass[12pt,a4paper]{article}
+
+% --------------------------------------------------
+% Pacotes
+% --------------------------------------------------
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[main=brazil]{babel}
+
+\usepackage[
+    a4paper,
+    margin=2.5cm,
+    top=3.2cm,
+    headheight=70pt,
+    headsep=18pt
+]{geometry}
+\usepackage{graphicx}
+
+\usepackage{amsmath,amssymb}
+\usepackage{caption}
+\usepackage{setspace}
+\usepackage{titlesec}
+\usepackage{indentfirst}
+\usepackage{float}
+\usepackage{newtxtext,newtxmath}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{automata, positioning, arrows.meta}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+
+% --------------------------------------------------
+% Cabeçalho
+% --------------------------------------------------
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[R]{\includegraphics[height=1.8cm]{base_images/logo-puc.png}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+% --------------------------------------------------
+% Ajustes visuais
+% --------------------------------------------------
+\setlength{\parindent}{1.25cm}
+\setlength{\parskip}{0pt}
+\onehalfspacing
+
+\captionsetup{
+    font=small,
+    labelfont=normalfont,
+    justification=centering
+}
+
+% listagens de código (assembly)
+\lstdefinestyle{asm}{
+    basicstyle=\ttfamily\small,
+    commentstyle=\color{gray},
+    keywordstyle=\color{blue!70!black},
+    breaklines=true,
+    columns=fullflexible,
+    frame=single,
+    framesep=4pt,
+    xleftmargin=6pt,
+    numbers=none
+}
+
+% Placeholder de figura ainda não inserida (compila sem a imagem).
+\newcommand{\placeholderfig}[1]{%
+    \fbox{\parbox[c][4.5cm][c]{0.98\linewidth}{\centering\itshape [Figura pendente: #1]}}%
+}
+
+% --------------------------------------------------
+% Documento
+% --------------------------------------------------
+\begin{document}
+
+% Título
+\begin{center}
+    {\LARGE \textbf{ENG4448 - Laboratório de Computação Digital}}\\[0.3cm]
+    {\Large Relatório do Projeto Final: Processador (CPU)}\\[0.2cm]
+    % TODO: ajustar a data
+    \_\_/\_\_/2026 - Rio de Janeiro
+\end{center}
+
+\vspace{0.6cm}
+
+\noindent \textbf{Turma 3VA - Dupla:}\\
+Pedro Coelho Carneiro da Cunha - 2310837\\
+Pedro Carneiro Nogueira - 2310540
+
+\vspace{0.4cm}
+\hrule
+\vspace{0.6cm}
+
+% ==============================================================
+\section{Introdução}
+% ==============================================================
+
+Este relatório descreve o projeto de um processador (CPU) de 8 bits implementado em VHDL
+para a FPGA Spartan-3E (XC3S500E) do \textit{Spartan-3E Starter Kit}. O sistema é uma
+estrutura mínima composta por uma \textbf{CPU} e uma \textbf{memória RAM estática} de 256
+posições de 8 bits, capaz de executar o conjunto de instruções definido no enunciado. O
+código do programa é carregado na memória já na inicialização, de modo que o processador
+começa a executar assim que o \textit{reset} é liberado.
+
+A palavra do processador tem \textbf{8 bits}, valor que se aplica tanto ao OpCode e ao seu
+complemento (quando existente) quanto aos registradores. A CPU possui quatro registradores
+de dados (\texttt{A}, \texttt{B}, \texttt{C}, \texttt{D}) e os registradores de controle
+\texttt{IR} (instrução), \texttt{PC} (contador de programa), \texttt{SP} (ponteiro de
+pilha), \texttt{MAR} (endereço de memória) e \texttt{MBR} (dado de memória). Todas as
+operações lógicas e aritméticas são realizadas exclusivamente pela ALU.
+
+Para permitir o acompanhamento visual da execução, o \textit{clock} da CPU é reduzido a
+$\approx 0{,}5$\,Hz (cerca de 2\,s por transição), enquanto o display LCD opera no
+\textit{clock} de 50\,MHz da placa. O conteúdo do \texttt{IR} é espelhado na primeira linha
+do LCD e o conteúdo da posição 255 da RAM na segunda linha; os sinais da ALU são exibidos
+nos LEDs discretos.
+
+% ==============================================================
+\section{Visão Geral da Arquitetura}
+% ==============================================================
+
+A organização segue o modelo clássico de Von Neumann com barramento único de memória: a
+CPU produz um endereço (\texttt{MAR}) e um dado de escrita (\texttt{MBR}), recebe o dado
+lido (\texttt{RAM\_DOUT}) e controla a escrita por meio do sinal \texttt{WE}. O caminho de
+dados é ilustrado na Figura~\ref{fig:datapath}.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[>=Stealth, font=\footnotesize,
+        block/.style={draw, rounded corners, minimum width=1.9cm, minimum height=0.9cm, align=center, fill=blue!5},
+        memsty/.style={draw, rounded corners, minimum width=1.9cm, minimum height=3.6cm, align=center, fill=green!7},
+        reg/.style={draw, minimum width=1.1cm, minimum height=0.7cm, align=center, fill=orange!10},
+        io/.style={draw, dashed, minimum width=1.5cm, minimum height=0.8cm, align=center},
+        sig/.style={->, >=Stealth, thick},
+        ctrl/.style={->, >=Stealth, densely dashed}]
+
+        % --- unidades ---
+        \node[memsty] (mem) at (0,0) {RAM\\$256\times8$};
+        \node[reg] (mar) at (3.1,1.2) {MAR};
+        \node[reg] (mbr) at (3.1,-1.2) {MBR};
+        \node[reg] (pc)  at (3.1,3.0) {PC};
+        \node[reg] (sp)  at (4.6,3.0) {SP};
+        \node[reg] (ir)  at (6.3,3.0) {IR};
+        \node[block] (rf)  at (6.3,1.0) {Reg.\\A/B/C/D};
+        \node[block] (alu) at (9.2,1.0) {ALU};
+        \node[block, minimum width=6cm, fill=red!5] (cu) at (4.6,-3.1)
+              {Unidade de Controle (FSM)\\ FETCH\ /\ DEC\_1\ /\ DEC\_2\ /\ EXEC};
+        \node[io] (leds) at (9.2,3.0) {LEDs\\(flags)};
+        \node[io] (lcd)  at (9.2,-1.4) {LCD};
+
+        % --- enderecos ---
+        \draw[sig] (mar.west) -- node[above]{ADDR} (mar.west -| mem.east);
+        \draw[sig] (pc.south) -- (mar.north);
+        \draw[sig] (sp.south) |- (mar.east);
+
+        % --- dados: MBR <-> RAM (DOUT na leitura, DIN na escrita) ---
+        \draw[<->, >=Stealth, thick] (mem.east |- mbr) -- node[above]{DIN/DOUT} (mbr.west);
+        \draw[sig] (mbr.north) -- node[right]{dado} (rf.south);
+        \draw[sig] (mbr.north east) -- (ir.south);
+
+        % --- reg file <-> ALU ---
+        \draw[sig] (rf.east) -- node[above]{A,\,B} (alu.west);
+        \draw[sig] (alu.north) -- ++(0,0.6) -| node[pos=0.25,above]{S} (rf.north);
+        \draw[sig] (alu.east) -- node[right]{flags} (leds.east |- alu) -- (leds.south);
+
+        % --- IR e POS_255 -> LCD ---
+        \draw[sig] (ir.east) -| (lcd.north);
+        \draw[sig] (mem.south) |- node[pos=0.75,below]{POS\_255} (lcd.west);
+
+        % --- sinais de controle ---
+        \draw[sig]  (ir.south) -- (cu.north -| ir);
+        \draw[ctrl] (cu.west) -| node[pos=0.75,left]{WE} (mem.south);
+        \draw[ctrl] (cu.east) -| (alu.south);
+    \end{tikzpicture}
+    \caption{Caminho de dados do processador. Setas sólidas: barramentos de dados/endereço;
+             setas tracejadas: sinais de controle gerados pela FSM.}
+    \label{fig:datapath}
+\end{figure}
+
+\subsection{Hierarquia de módulos}
+
+O projeto é estruturado hierarquicamente a partir do módulo de topo \texttt{main}:
+
+\begin{itemize}
+    \item \texttt{main}: topo estrutural; instancia e interliga os componentes e expõe
+          os pinos físicos (clock, reset, LEDs e LCD).
+    \item \texttt{clk\_gen}: divisor de \textit{clock} que gera o \textit{clock} lento
+          da CPU.
+    \item \texttt{cpu}: unidade central; contém os registradores, a unidade de controle
+          (FSM) e instancia a ALU.
+    \begin{itemize}
+        \item \texttt{alu}: unidade lógica e aritmética.
+    \end{itemize}
+    \item \texttt{memory}: RAM estática de $256 \times 8$ bits.
+    \item \texttt{LCD}: controlador do display.
+    \begin{itemize}
+        \item \texttt{lcd\_init}: inicialização do display em modo 4 bits.
+        \item \texttt{lcd\_write}: escrita dinâmica (espelha \texttt{IR} e RAM[255]).
+    \end{itemize}
+\end{itemize}
+
+% ==============================================================
+\section{Descrição dos Módulos}
+% ==============================================================
+
+\subsection{Módulo de topo (\texttt{main.vhd})}
+
+De arquitetura estrutural, o \texttt{main} interliga os componentes por sinais internos: o
+barramento de endereço (\texttt{r\_RAM\_ADDR}), os dados de escrita e leitura
+(\texttt{r\_RAM\_DIN}, \texttt{r\_RAM\_DOUT}), o \textit{write enable} (\texttt{r\_WE}), o
+\texttt{IR} espelhado (\texttt{r\_IR}) e o valor da posição 255 (\texttt{r\_POS\_255}).
+
+Um ponto importante é a \textbf{separação de domínios de \textit{clock}}: a CPU e a memória
+usam o \textit{clock} lento (\texttt{r\_CLK\_SLOW}), gerado por \texttt{clk\_gen}, enquanto
+o LCD é ligado diretamente ao \textit{clock} de 50\,MHz (\texttt{CLK50}). Isso atende ao
+enunciado (o LCD deve usar o \textit{clock} rápido) e permite que o display seja atualizado
+milhares de vezes por segundo, refletindo em tempo real o estado do processador, mesmo com
+a CPU avançando uma instrução a cada $\approx 2$\,s. O \textit{clock} lento também é
+exportado no pino \texttt{CLK\_LED} para visualização.
+
+\subsection{Gerador de \textit{clock} (\texttt{clk\_gen.vhd})}
+
+Divisor de frequência que conta ciclos de 50\,MHz e inverte a saída ao atingir o divisor
+(\texttt{DIVISOR = 50\,000\,000}), produzindo um \textit{clock} de $\approx 0{,}5$\,Hz
+(período de $\approx 2$\,s). Essa redução é o que torna cada instrução ``visível'', como
+pedido no enunciado, permitindo acompanhar passo a passo as transições da FSM no LCD e nos
+LEDs.
+
+\subsection{Unidade Lógica e Aritmética (\texttt{alu.vhd})}
+\label{sec:alu}
+
+A ALU é puramente combinacional (processo sensível a \texttt{A}, \texttt{B} e \texttt{CMD}).
+A operação é selecionada por \texttt{CMD}, um vetor de 5 bits formado diretamente pelos bits
+do OpCode: \texttt{CMD = IR(6\,downto\,4) \& IR(1\,downto\,0)}. Os três bits superiores
+escolhem a família da operação e os dois inferiores o detalhe (por exemplo, distinguir
+\texttt{inc} de \texttt{dec}, ou os quatro tipos de deslocamento). Reaproveitar os bits do
+OpCode como seletor mantém o mapeamento instrução\,$\leftrightarrow$\,operação direto e
+sem lógica de decodificação adicional.
+
+\paragraph{Decisão de projeto: apenas a ALU calcula.}
+Todas as operações aritméticas e lógicas passam pela ALU, inclusive \texttt{inc},
+\texttt{dec} e \texttt{not}, que poderiam ser tentados fora dela. A CPU nunca faz contas:
+ela apenas fornece os operandos e decide onde guardar o resultado (\texttt{ALU\_S}). Isso
+cumpre o requisito do enunciado (``só a ALU sabe fazer conta'') e concentra em um único
+lugar a geração das \textit{flags}.
+
+\paragraph{\textit{Flags} e detecção de \textit{overflow}.}
+A ALU gera cinco \textit{flags}: \texttt{EQUAL} ($A = B$), \texttt{GREATER} ($A > B$),
+\texttt{SMALLER} ($A < B$), \texttt{ZERO} (resultado nulo) e \texttt{OVERFLOW}. Para
+detectar \textit{carry}/\textit{overflow} nas somas e subtrações, as operações são feitas
+com um bit extra (9 bits): o bit mais significativo do resultado estendido vira a
+\textit{flag} \texttt{OVERFLOW}. Conforme o enunciado, a ALU opera apenas com valores
+\textbf{unsigned}.
+
+\paragraph{Como as \textit{flags} ``permanecem''.}
+O enunciado pede que os sinais da ALU sejam mantidos (em \textit{flip-flops}) até que uma
+nova operação lógica/aritmética ocorra. Na nossa implementação, isso é garantido de forma
+elegante pelo próprio caminho de dados: as entradas \texttt{ALU\_A}, \texttt{ALU\_B} e
+\texttt{ALU\_CMD} são \textbf{registradores} atualizados \textbf{somente} nas instruções de
+ALU (quando \texttt{IR(7) = '0'}). Como a ALU é combinacional a partir dessas entradas
+estáveis, suas saídas, e portanto as \textit{flags}, permanecem inalteradas entre
+duas operações aritméticas/lógicas. As \textit{flags} são levadas aos LEDs discretos, onde
+ficam visíveis até a próxima operação da ALU. Essa escolha evita \textit{flip-flops}
+explícitos na saída da ALU e o cuidado extra de gerar um sinal de \textit{enable} para eles:
+como o dado só muda quando deve, o registro das \emph{entradas} já cumpre o papel.
+
+\paragraph{Operações e o \textit{encoding} do \texttt{CMD}.}
+Os três bits superiores de \texttt{CMD} selecionam a família da operação e os dois inferiores
+o detalhe (Tabela~\ref{tab:aluops}). Internamente, os operandos são estendidos para 9 bits
+(\texttt{var\_A}, \texttt{var\_B}, \texttt{var\_S}) com um zero à esquerda; assim, a soma e a
+subtração produzem naturalmente o nono bit, que é justamente o \textit{carry}/\textit{borrow}
+usado como \texttt{OVERFLOW}. Um cuidado específico: na operação \texttt{not}, o nono bit do
+resultado é forçado a \texttt{'0'}, para que a inversão bit a bit não gere uma \textit{flag}
+de \textit{carry} espúria. Os deslocamentos e rotações (família \texttt{111}) são feitos por
+concatenação direta dos bits de \texttt{A}. Por exemplo, \texttt{rol} produz
+\texttt{A(6\,downto\,0)\,\&\,A(7)} e \texttt{lsr} produz \texttt{'0'\,\&\,A(7\,downto\,1)}.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{ccl}
+\hline
+\textbf{CMD(4:2)} & \textbf{CMD(1:0)} & \textbf{Operação} \\
+\hline
+000 & --  & \texttt{add} ($A+B$) \\
+001 & --  & \texttt{sub} ($A-B$) \\
+010 & 00/01 & \texttt{inc} ($A+1$) / \texttt{dec} ($A-1$) \\
+011 & --  & \texttt{and} \\
+100 & --  & \texttt{or} \\
+101 & --  & \texttt{not} ($\sim A$) \\
+110 & --  & \texttt{xor} \\
+111 & 00/01/10/11 & \texttt{rol} / \texttt{ror} / \texttt{lsl} / \texttt{lsr} \\
+\hline
+\end{tabular}
+\caption{Seleção de operação da ALU a partir de \texttt{CMD = IR(6:4) \& IR(1:0)}.}
+\label{tab:aluops}
+\end{table}
+
+\subsection{Memória (\texttt{memory.vhd})}
+\label{sec:memory}
+
+A RAM é um arranjo (\texttt{RAM\_t}) de 256 palavras de 8 bits (exigindo 8 linhas de
+endereço), inicializado com o programa a ser executado (ver Seção~\ref{sec:testes}). A
+posição 255 é reservada como saída de I/O e seu conteúdo é exposto permanentemente no sinal
+\texttt{POS\_255}, que alimenta a segunda linha do LCD.
+
+O comportamento é descrito por um único processo síncrono e duas atribuições combinacionais:
+
+\begin{itemize}
+    \item \textbf{Processo (borda de descida)}: se \texttt{WE = '1'}, escreve
+          \texttt{ram(ADDR) $\leftarrow$ DIN}; e, incondicionalmente, registra o endereço de
+          leitura em \texttt{read\_address $\leftarrow$ ADDR}.
+    \item \textbf{Combinacional}: \texttt{DOUT $\leftarrow$ ram(read\_address)} e
+          \texttt{POS\_255 $\leftarrow$ ram(255)}.
+\end{itemize}
+
+Registrar o endereço de leitura (\texttt{read\_address}) na borda de descida e derivar
+\texttt{DOUT} de forma combinacional a partir dele é o que faz o dado lido ficar estável já
+na segunda metade do ciclo. Esse é o ponto central de temporização, detalhado na
+Seção~\ref{sec:memacc}: a memória opera na \textbf{borda de descida} enquanto a CPU opera na
+de \textbf{subida}. Note que \texttt{POS\_255} não depende de \texttt{read\_address},
+refletindo sempre a posição 255, de modo que o valor de I/O aparece no LCD assim que é
+escrito, sem precisar ser ``lido'' pela CPU.
+
+O programa é carregado por meio da \textbf{inicialização} do sinal \texttt{ram}: cada
+programa de teste tem um arquivo \texttt{.vhd} correspondente em que esse arranjo já vem
+preenchido com os \textit{opcodes} (ver Seção~\ref{sec:testes}). Assim, ao liberar o
+\textit{reset}, o processador encontra o código já na memória e começa a executar
+imediatamente.
+
+\subsection{Unidade Central de Processamento (\texttt{cpu.vhd})}
+
+A CPU concentra os registradores, a unidade de controle (a FSM da Seção~\ref{sec:fsm}) e
+instancia a ALU. Os registradores são:
+
+\begin{itemize}
+    \item \texttt{IR} (\texttt{std\_logic\_vector}): registrador de instrução. É um vetor
+          de bits ``puro'' porque sempre contém uma instrução, sobre a qual se faz
+          fatiamento de campos, e não aritmética.
+    \item \texttt{PC}, \texttt{SP}, \texttt{MAR} (\texttt{unsigned}): contador de programa,
+          ponteiro de pilha e registrador de endereço. São \texttt{unsigned} porque sofrem
+          aritmética de endereço (incrementos, \texttt{SP $\pm$ 1}). O \texttt{SP} é
+          inicializado em \texttt{254} (\texttt{0xFE}), pois a posição 255 é reservada para
+          I/O; a pilha cresce ``para baixo'' (decrementa no \texttt{push}).
+    \item \texttt{MBR} (\texttt{std\_logic\_vector}): \textit{buffer} de dados de memória;
+          é um vetor genérico porque pode conter qualquer valor lido/escrito.
+    \item \texttt{REG}: arranjo de quatro registradores de dados (\texttt{A}, \texttt{B},
+          \texttt{C}, \texttt{D}), indexados por \texttt{0..3}.
+\end{itemize}
+
+Toda a lógica está em um único processo síncrono (borda de subida). Logo no início do ciclo,
+duas variáveis locais extraem os índices dos registradores diretamente do \texttt{IR}:
+\texttt{rx = IR(3\,downto\,2)} e \texttt{ry = IR(1\,downto\,0)}. Isso simplifica muito o
+código: em vez de repetir o fatiamento em cada instrução, usa-se \texttt{REG(rx)} e
+\texttt{REG(ry)}. No \textit{reset}, os registradores de dados e \texttt{PC}/\texttt{IR}/%
+\texttt{MAR}/\texttt{MBR} são zerados, \texttt{SP} recebe \texttt{0xFE}, \texttt{WE} vai a
+\texttt{'0'} e a FSM volta ao estado \texttt{FETCH}.
+
+As saídas para o resto do sistema são atribuições diretas: \texttt{RAM\_ADDR = MAR},
+\texttt{RAM\_DIN = MBR}, \texttt{FLAGS = ALU\_FLAGS} (para os LEDs) e \texttt{IR\_OUT = IR}
+(para o LCD espelhar a instrução corrente).
+
+\subsection{Controlador do LCD (\texttt{LCD.vhd}, \texttt{lcd\_init}, \texttt{lcd\_write})}
+
+O LCD roda a 50\,MHz e é composto por dois submódulos, arbitrados por um multiplexador
+controlado pelo sinal \texttt{init\_done}:
+
+\begin{itemize}
+    \item \texttt{lcd\_init}: executa a sequência de inicialização em modo 4 bits (FSM
+          de 13 estados). Enquanto não termina, controla o barramento do display.
+    \item \texttt{lcd\_write}: após a inicialização, escreve continuamente as duas
+          linhas. A cada passada ele \textbf{recaptura} o estado atual e monta:
+          \begin{itemize}
+              \item \textbf{Linha 1}: o nome (mnemônico) da instrução corrente, decodificado
+                    a partir do \texttt{IR} (função \texttt{ir\_to\_line});
+              \item \textbf{Linha 2}: o texto \texttt{"MEM[255]="} seguido do valor da
+                    posição 255 em decimal (função \texttt{pos255\_to\_line}, que usa
+                    conversão binário$\to$BCD).
+          \end{itemize}
+          Ao terminar as duas linhas, o módulo volta a capturar \texttt{IR}/RAM[255] e
+          reescreve, espelhando o processador em tempo real.
+\end{itemize}
+
+O sinal \texttt{SF\_CE0} é mantido em \texttt{'1'} para desabilitar a memória StrataFlash,
+que compartilha o barramento \texttt{SF\_D} com o LCD.
+
+% ==============================================================
+\section{Conjunto de Instruções e a Máquina de Estados}
+% ==============================================================
+
+\subsection{A FSM da Unidade de Controle}
+\label{sec:fsm}
+
+O núcleo da CPU é uma máquina de estados finitos (FSM) de quatro estados que se repete a
+cada instrução (Figura~\ref{fig:fsm}). A escolha de exatamente esses estados está
+diretamente ligada à latência de leitura da memória (Seção~\ref{sec:memacc}) e à
+possibilidade de uma instrução exigir uma \textbf{segunda busca}.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[->,>=stealth,shorten >=1pt,node distance=3.2cm,on grid,
+        every state/.style={draw, minimum size=1.5cm, font=\footnotesize\ttfamily}]
+        \node[state,initial,initial text=reset] (F)  {FETCH};
+        \node[state, right=of F]  (D1) {DEC\_1};
+        \node[state, right=of D1] (D2) {DEC\_2};
+        \node[state, right=of D2] (E)  {EXEC};
+        \path (F)  edge (D1)
+              (D1) edge (D2)
+              (D2) edge (E)
+              (E)  edge[bend left=40] node[below]{próxima instrução} (F)
+              (E)  edge[loop above]  node{\footnotesize HALT} (E);
+    \end{tikzpicture}
+    \caption{Máquina de estados da unidade de controle. A instrução \texttt{halt} congela a
+             FSM no estado \texttt{EXEC}.}
+    \label{fig:fsm}
+\end{figure}
+
+\paragraph{Por que cada estado existe.}
+\begin{itemize}
+    \item \textbf{\texttt{FETCH}}: o \texttt{MAR} já aponta para o \texttt{PC} (posicionado
+          ao final do \texttt{EXEC} anterior), então o barramento de leitura já traz a
+          instrução. Aqui capturamos \texttt{IR $\leftarrow$ RAM\_DOUT} e incrementamos o
+          \texttt{PC}.
+    \item \textbf{\texttt{DECODE\_1}}: decodifica o \texttt{IR} e \textbf{prepara o primeiro
+          acesso}. Para instruções de ALU, carrega os operandos e o comando da ALU. Para as
+          demais, define o endereço/dado do acesso: \texttt{ld}/\texttt{st}/\texttt{jmp}
+          apontam \texttt{MAR} para o \texttt{PC} (endereço do segundo byte); \texttt{push}
+          escreve na pilha; \texttt{pop} aponta \texttt{MAR} para \texttt{SP+1};
+          \texttt{ldr}/\texttt{str} apontam \texttt{MAR} para o registrador; os
+          \textit{branches} consultam as \textit{flags} e podem já atualizar o \texttt{PC}.
+    \item \textbf{\texttt{DECODE\_2}}: \textbf{consome} o resultado do acesso preparado em
+          \texttt{DECODE\_1}, ou seja, a ``segunda busca''. Por exemplo, \texttt{ld} recebe o
+          valor em \texttt{MBR} e avança o \texttt{PC}; \texttt{jmp} carrega o \texttt{PC}
+          com o endereço lido; \texttt{st} usa o endereço-alvo lido e dispara a escrita;
+          \texttt{pop}/\texttt{ldr} trazem o dado lido para o \texttt{MBR}. Instruções que
+          não precisam de um segundo acesso simplesmente não fazem nada aqui.
+    \item \textbf{\texttt{EXECUTE}}: \textbf{escreve o resultado} no registrador de destino:
+          \texttt{REG(rx) $\leftarrow$ ALU\_S} para operações da ALU, ou
+          \texttt{REG(rx) $\leftarrow$ MBR} para \texttt{pop}/\texttt{ld}/\texttt{ldr}. Ao
+          final, reposiciona \texttt{MAR $\leftarrow$ PC} para que a próxima instrução já
+          esteja disponível no \texttt{FETCH}. Na instrução \texttt{halt}, a FSM permanece
+          em \texttt{EXEC}, congelando a execução.
+\end{itemize}
+
+\subsection{Acesso seguro à memória: bordas de subida e descida}
+\label{sec:memacc}
+
+A decisão de projeto mais delicada foi a temporização do acesso à memória. A CPU atualiza
+todos os seus registradores na \textbf{borda de subida} do \textit{clock}; a memória, por
+outro lado, amostra o endereço e efetua a escrita na \textbf{borda de descida}:
+
+\begin{itemize}
+    \item \textbf{Leitura.} No estado corrente (borda de subida), a CPU coloca o endereço em
+          \texttt{MAR} (\,$\to$\,\texttt{RAM\_ADDR}). Meio ciclo depois (borda de descida),
+          a memória captura esse endereço em \texttt{read\_address}. Como \texttt{DOUT} é
+          combinacional a partir de \texttt{read\_address}, o dado lido já está estável na
+          segunda metade do ciclo, \textbf{pronto para ser consumido pela CPU na próxima
+          borda de subida}. Ou seja, um endereço apresentado no estado $N$ é lido no estado
+          $N+1$, exatamente o que justifica a existência do \texttt{DECODE\_2}.
+    \item \textbf{Escrita.} \texttt{WE} e o dado (\texttt{MBR}\,$\to$\,\texttt{DIN}) são
+          posicionados na borda de subida e a escrita só se efetiva na borda de descida
+          seguinte, quando endereço e dado já estão estáveis. Isso evita escrever com o
+          barramento em transição.
+\end{itemize}
+
+\paragraph{Por que isso é seguro, funcional e eficiente.}
+\textbf{Seguro:} colocar as ações da CPU (subida) e da memória (descida) em bordas opostas
+elimina a corrida entre a CPU dirigindo o barramento e a memória amostrando-o; há sempre
+meio ciclo de folga para o endereço/dado estabilizar, e a leitura combinacional nunca
+observa um endereço em transição. \textbf{Funcional:} o dado lido está garantidamente
+disponível no início do ciclo seguinte, exatamente quando a CPU precisa dele.
+\textbf{Minimamente eficiente:} como não é preciso esperar a memória, cada acesso cabe em um
+único estado da FSM; não há estados de espera (\textit{wait states}). É por isso que a FSM
+tem apenas quatro estados: o \texttt{DECODE\_2} aproveita a latência natural de um ciclo
+da leitura para a segunda busca, sem desperdiçar tempo.
+
+\subsection{Tabela de instruções}
+
+A Tabela~\ref{tab:isa} resume o conjunto de instruções (\texttt{Rx}/\texttt{Ry} são
+registradores; o formato do OpCode é \texttt{[4 bits opcode][2 bits Rx][2 bits Ry/detalhe]}).
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{lll}
+\hline
+\textbf{Assembly} & \textbf{OpCode} & \textbf{Ação} \\
+\hline
+\texttt{add Rx, Ry}  & \texttt{0000 Rx Ry} & Rx $\leftarrow$ Rx + Ry \\
+\texttt{sub Rx, Ry}  & \texttt{0001 Rx Ry} & Rx $\leftarrow$ Rx $-$ Ry \\
+\texttt{inc Rx}      & \texttt{0010 Rx 00} & Rx $\leftarrow$ Rx + 1 \\
+\texttt{dec Rx}      & \texttt{0010 Rx 01} & Rx $\leftarrow$ Rx $-$ 1 \\
+\texttt{and Rx, Ry}  & \texttt{0011 Rx Ry} & Rx $\leftarrow$ Rx \& Ry \\
+\texttt{or Rx, Ry}   & \texttt{0100 Rx Ry} & Rx $\leftarrow$ Rx $|$ Ry \\
+\texttt{not Rx}      & \texttt{0101 Rx 00} & Rx $\leftarrow$ $\sim$Rx \\
+\texttt{xor Rx, Ry}  & \texttt{0110 Rx Ry} & Rx $\leftarrow$ Rx \^{} Ry \\
+\texttt{rol Rx}      & \texttt{0111 Rx 00} & rotaciona à esquerda \\
+\texttt{ror Rx}      & \texttt{0111 Rx 01} & rotaciona à direita \\
+\texttt{lsl Rx}      & \texttt{0111 Rx 10} & desloca à esquerda \\
+\texttt{lsr Rx}      & \texttt{0111 Rx 11} & desloca à direita \\
+\texttt{push Rx}     & \texttt{1000 Rx 00} & MEM[SP] $\leftarrow$ Rx; SP-- \\
+\texttt{pop Rx}      & \texttt{1000 Rx 01} & Rx $\leftarrow$ MEM[SP+1]; SP++ \\
+\texttt{st Rx, 0x--} & \texttt{1000 Rx 10} & MEM[PC+1] $\leftarrow$ Rx; PC += 2 \\
+\texttt{ld Rx, 0x--} & \texttt{1000 Rx 11} & Rx $\leftarrow$ MEM[PC+1]; PC += 2 \\
+\texttt{ldr Rx, [Ry]}& \texttt{1001 Rx Ry} & Rx $\leftarrow$ MEM[Ry] \\
+\texttt{str Rx, [Ry]}& \texttt{1010 Rx Ry} & MEM[Ry] $\leftarrow$ Rx \\
+\texttt{mov Rx, Ry}  & \texttt{1011 Rx Ry} & Rx $\leftarrow$ Ry \\
+\texttt{jmp 0x--}    & \texttt{1100 00 00} & PC $\leftarrow$ MEM[PC+1] \\
+\texttt{jmpr Rx}     & \texttt{1100 Rx 01} & PC $\leftarrow$ Rx \\
+\texttt{bz / bnz Rx} & \texttt{1100 Rx 1x} & salta se (não) \texttt{ZERO} \\
+\texttt{bcs / bcc Rx}& \texttt{1101 Rx 0x} & salta se (não) \texttt{CARRY} \\
+\texttt{beq / bneq Rx}& \texttt{1101 Rx 1x}& salta se (não) \texttt{EQUAL} \\
+\texttt{bgt / blt Rx}& \texttt{1110 Rx 0x} & salta se \texttt{GREATER}/\texttt{SMALLER} \\
+\texttt{halt}        & \texttt{1111 00 00} & congela a execução \\
+\hline
+\end{tabular}
+\caption{Conjunto de instruções implementado.}
+\label{tab:isa}
+\end{table}
+
+\subsection{Como cada classe de instrução percorre a FSM}
+
+\begin{itemize}
+    \item \textbf{Aritméticas/lógicas} (\texttt{IR(7)='0'}): \texttt{DECODE\_1} carrega
+          \texttt{ALU\_A}, \texttt{ALU\_B} e \texttt{ALU\_CMD}; \texttt{EXECUTE} grava
+          \texttt{ALU\_S} em \texttt{Rx}. Não há segundo acesso à memória.
+    \item \textbf{\texttt{ld}/\texttt{st}} (dois bytes): \texttt{DECODE\_1} aponta
+          \texttt{MAR} para \texttt{PC}; \texttt{DECODE\_2} lê o segundo byte
+          (\texttt{ld} guarda o valor em \texttt{MBR}, \texttt{st} usa-o como endereço-alvo e
+          dispara a escrita) e avança o \texttt{PC}; \texttt{EXECUTE} completa
+          (\texttt{ld} grava \texttt{MBR} em \texttt{Rx}).
+    \item \textbf{\texttt{push}/\texttt{pop}}: \texttt{push} escreve
+          \texttt{MEM[SP] $\leftarrow$ Rx} e decrementa \texttt{SP} já em \texttt{DECODE\_1};
+          \texttt{pop} aponta \texttt{MAR} para \texttt{SP+1}, lê em \texttt{DECODE\_2} e
+          grava em \texttt{Rx} no \texttt{EXECUTE}, incrementando \texttt{SP}.
+    \item \textbf{\texttt{ldr}/\texttt{str}}: usam um registrador como ponteiro. \texttt{ldr}
+          lê \texttt{MEM[Ry]}; \texttt{str} escreve \texttt{MEM[Ry] $\leftarrow$ Rx}.
+    \item \textbf{Saltos e \textit{branches}}: \texttt{jmp} lê o endereço em
+          \texttt{DECODE\_2}; \texttt{jmpr} usa um registrador; os \textit{branches}
+          consultam as \textit{flags} mantidas pela ALU e atualizam o \texttt{PC}
+          condicionalmente.
+\end{itemize}
+
+% ==============================================================
+\section{Programas de Teste na Placa}
+\label{sec:testes}
+% ==============================================================
+
+\subsection{Metodologia}
+
+Os programas são escritos em \textit{assembly} e traduzidos para \textbf{bytes} por um
+montador (\texttt{nasm.py}), que gera a inicialização da RAM. Cada programa tem seu
+arquivo \texttt{.vhd} correspondente (mesmo nome do \texttt{.asm}) em que o arranjo da
+memória já vem preenchido com os \textit{opcodes}, com o \textit{assembly} original
+comentado ao lado de cada byte. Assim, ``carregar o programa'' consiste em usar a memória
+inicializada com aquele conteúdo, e o processador começa a executar ao liberar o
+\textit{reset}. Durante a execução, a instrução corrente aparece na linha 1 do LCD, a
+posição 255 (usada como saída de I/O) na linha 2, e as \textit{flags} da ALU nos LEDs.
+
+Foram validados três programas na placa; os vídeos de cada execução estão disponíveis em:
+
+\begin{itemize}
+    \item \texttt{greatest}: \url{https://youtu.be/XXXXXXXXXXX}
+    \item \texttt{fib}: \url{https://youtu.be/XXXXXXXXXXX}
+    \item \texttt{trabalho\_final}: \url{https://youtu.be/XXXXXXXXXXX}
+\end{itemize}
+
+\subsection{Acompanhamento da execução passo a passo}
+
+Como cada instrução fica visível por $\approx 2$\,s, três saídas permitem acompanhar o
+estado do processador: a \textbf{linha 1 do LCD} (nome da instrução no \texttt{IR}), os
+\textbf{LEDs} (as \textit{flags} da ALU) e a \textbf{linha 2 do LCD} (a posição 255 da RAM).
+A Tabela~\ref{tab:trace} ilustra esse acompanhamento para um trecho simples que soma dois
+valores e escreve o resultado na saída de I/O:
+
+\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[style=asm]
+    ld Ra, 0x0A      ; Ra = 10
+    ld Rb, 0x03      ; Rb = 3
+    add Ra, Rb       ; Ra = 13 ; atualiza as flags
+    ld Rc, 0xFF      ; Rc = 255 (endereco de I/O)
+    str Ra, [Rc]     ; MEM[255] = 13  -> aparece no LCD
+    halt
+\end{lstlisting}
+\end{minipage}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{clccccc c}
+\hline
+ & \textbf{Instrução (LCD 1)} & \multicolumn{5}{c}{\textbf{LEDs (flags)}} & \textbf{MEM[255]} \\
+\textbf{Passo} & & E & G & S & Z & O & \textbf{(LCD 2)} \\
+\hline
+1 & \texttt{ld Rx, 0x--}  & 0 & 0 & 0 & 0 & 0 & 0 \\
+2 & \texttt{ld Rx, 0x--}  & 0 & 0 & 0 & 0 & 0 & 0 \\
+3 & \texttt{add Rx, Ry}   & 0 & 1 & 0 & 0 & 0 & 0 \\
+4 & \texttt{ld Rx, 0x--}  & 0 & 1 & 0 & 0 & 0 & 0 \\
+5 & \texttt{str Rx, [Ry]} & 0 & 1 & 0 & 0 & 0 & 13 \\
+6 & \texttt{halt}         & 0 & 1 & 0 & 0 & 0 & 13 \\
+\hline
+\end{tabular}
+\caption{Passo a passo da execução (E=EQUAL, G=GREATER, S=SMALLER, Z=ZERO, O=OVERFLOW).
+         As \textit{flags} são atualizadas na operação da ALU (passo 3, \texttt{add} com
+         $10>3$) e \textbf{permanecem} nos passos seguintes; \texttt{MEM[255]} muda para 13
+         quando o \texttt{str} escreve na posição de I/O (passo 5).}
+\label{tab:trace}
+\end{table}
+
+A tabela evidencia dois comportamentos discutidos: as \textit{flags} só mudam em operações
+da ALU e ficam ``congeladas'' nas demais instruções (passos 4--6), e a posição 255,
+espelhada no LCD, reflete imediatamente a escrita feita pelo \texttt{str}.
+
+\subsection{\texttt{greatest.asm}: maior valor de um vetor}
+
+O programa percorre um vetor de 5 bytes (\texttt{[15, 56, 9, 252, 99]}) e determina o maior
+valor. \texttt{Ra} aponta para o início do vetor e \texttt{Rb} para o fim; \texttt{Rc}
+mantém o maior valor encontrado (inicialmente 0). A cada iteração, o valor apontado é lido
+com \texttt{ldr} e comparado com \texttt{Rc} via subtração; se for maior
+(\textit{flag} \texttt{GREATER}), torna-se o novo máximo. A pilha (\texttt{push}/\texttt{pop})
+é usada para preservar registradores durante as comparações. Ao terminar, o maior valor
+(\texttt{252}) é escrito na posição de I/O (\texttt{0xFF}) com \texttt{str}, aparecendo na
+segunda linha do LCD. O laço principal está no trecho abaixo:
+
+\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[style=asm]
+loop:
+    push Ra
+    sub Ra, Rb        ; compara o ponteiro atual com o fim do vetor
+    ld Rd, @end
+    beq Rd            ; se Ra == Rb, o vetor terminou -> @end
+    pop Ra
+    ldr Rd, [Ra]      ; Rd = MEM[Ra] (valor na posicao atual)
+    push Rd
+    sub Rd, Rc        ; compara o valor atual com o maior ate agora
+    ld Rd, @new_greatest
+    bgt Rd            ; se maior (flag GREATER), atualiza o maximo
+    pop Rd
+next_iter:
+    inc Ra            ; avanca para a proxima posicao
+    jmp @loop
+\end{lstlisting}
+\end{minipage}
+
+Note o uso das \textit{flags} da ALU (\texttt{beq} após a subtração de ponteiros e
+\texttt{bgt} após a comparação de valores) para controlar o laço, e do acesso indireto
+\texttt{ldr Rd, [Ra]} para percorrer o vetor.
+
+\subsection{\texttt{fib.asm}: sequência de Fibonacci}
+
+Implementa a geração da sequência de Fibonacci exibindo cada termo na saída de I/O. O
+programa usa a pilha para manter os termos anteriores e a ALU (\texttt{add}) para produzir
+o próximo termo, com controle de laço baseado nas \textit{flags} (\texttt{beq},
+\texttt{blt}, \texttt{bcs}, \texttt{bneq}). Também exercita deslocamentos (\texttt{lsr},
+\texttt{lsl}) e decremento (\texttt{dec}) em fases adicionais, servindo como um teste
+abrangente do conjunto de instruções. O trecho central, que produz e exibe cada termo, é:
+
+\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[style=asm]
+loop_fib:
+    ; ... recupera os dois termos anteriores da pilha ...
+    add Ra, Rb        ; proximo termo = anterior + penultimo
+    ld Rd, @IO
+    str Ra, [Rd]      ; exibe o termo na saida de I/O (LCD)
+    push Ra
+    push Rc
+    jmp @loop_fib
+\end{lstlisting}
+\end{minipage}
+
+A pilha guarda os dois termos anteriores entre iterações; a soma é feita pela ALU
+(\texttt{add}) e o resultado é mostrado com \texttt{str} na posição de I/O.
+
+\subsection{\texttt{trabalho\_final.asm}: ordenação e contador}
+
+É o teste mais completo. O programa: (i) imprime no LCD o vetor
+\texttt{[133, 122, 255, 33, 77, 99, 103, 200, 5, 25]}; (ii) ordena o vetor em ordem
+crescente por seleção do mínimo, usando variáveis em memória (ponteiros e índices) e uma
+``função'' \texttt{printLCD} chamada via pilha (\texttt{push} do endereço de retorno +
+\texttt{jmpr}); (iii) em seguida soma \texttt{Ra = Ra + 2} repetidamente, mostrando o valor
+no LCD, até ocorrer \textit{carry} (\texttt{bcs}); (iv) ao estourar, volta a imprimir o
+vetor já ordenado e encerra com \texttt{halt}. Este programa exercita praticamente toda a
+arquitetura: acesso indireto à memória, pilha como mecanismo de chamada/retorno, aritmética
+com detecção de \textit{overflow} e uso intensivo das \textit{flags}. O destaque é a
+``função'' \texttt{printLCD}, que implementa chamada e retorno usando a pilha: o chamador
+empilha o endereço de retorno e a função retorna com \texttt{jmpr}:
+
+\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[style=asm]
+; chamador: empilha o endereco de retorno e desvia
+    ld Rc, @incIdx
+    push Rc               ; endereco de retorno na pilha
+    ; ... (cai em printLCD) ...
+
+printLCD:  ld Rc, @LCD
+           str Ra, [Rc]   ; imprime o valor no LCD (I/O)
+           pop Rc         ; recupera o endereco de retorno
+           jmpr Rc        ; "return": salta para o endereco de retorno
+\end{lstlisting}
+\end{minipage}
+
+Esse padrão (\texttt{push} do endereço de retorno + \texttt{jmpr}) emula chamadas de
+sub-rotina sem uma instrução dedicada de \texttt{call}, mostrando a flexibilidade da pilha e
+do salto indireto por registrador.
+
+\subsection{Implementação na placa}
+
+A síntese e implementação foram feitas no Xilinx ISE para a FPGA Spartan-3E (XC3S500E). O
+arquivo de restrições \texttt{main.ucf} atribui: \texttt{CLK50} $\to$ C9 (oscilador de
+50\,MHz), \texttt{RST} $\to$ L13 (com \textit{pull-down}), o \textit{clock} lento
+\texttt{CLK\_LED} $\to$ F9, as \textit{flags} \texttt{EQUAL}/\texttt{GREATER}/%
+\texttt{SMALLER}/\texttt{ZERO}/\texttt{OVERFLOW} aos LEDs discretos, o barramento
+\texttt{SF\_D[11:8]} e os controles \texttt{LCD\_E}/\texttt{LCD\_RS}/\texttt{LCD\_RW} ao
+display, e \texttt{SF\_CE0} mantido para desabilitar a StrataFlash.
+
+% ==============================================================
+\section{Conclusão}
+% ==============================================================
+
+O processador implementado executa corretamente todo o conjunto de instruções especificado,
+com todas as operações concentradas na ALU e uma unidade de controle enxuta de quatro
+estados. As duas decisões de projeto centrais, centralizar o cálculo e as
+\textit{flags} na ALU e acessar a memória em bordas opostas às da CPU, resultaram em um
+caminho de dados simples, seguro e sem estados de espera. Os três programas de teste,
+validados na placa, confirmam o funcionamento da aritmética, dos saltos condicionais, da
+pilha e do acesso indireto à memória, com o estado da execução acompanhável em tempo real
+pelo LCD e pelos LEDs.
+
+\end{document}
