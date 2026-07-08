@@ -5,6 +5,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 entity main is
     Port ( CLK50 : in  STD_LOGIC;
            RST : in  STD_LOGIC;
+		   CLK_LED : out STD_LOGIC;
 		   FLAGS : out STD_LOGIC_VECTOR(4 downto 0);
 		   -- interface do LCD (barramento compartilhado com a StrataFlash)
 		   SF_D   : out STD_LOGIC_VECTOR(11 downto 8);
@@ -73,5 +74,7 @@ begin
 			LCD_RW  => LCD_RW,
 			SF_CE0  => SF_CE0
 		);
+	
+	CLK_LED <= r_CLK_SLOW;
 
 end Structural;
